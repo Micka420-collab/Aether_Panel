@@ -4,6 +4,7 @@ import { authenticator } from "otplib";
 import { cookies, headers } from "next/headers";
 import type { User } from "@prisma/client";
 import { db } from "./db";
+import { env } from "./env";
 import { randomToken, sha256, encrypt, decrypt } from "./crypto";
 import { clientIp } from "./ratelimit";
 
@@ -46,7 +47,9 @@ export async function createSession(userId: string, mfaCompleted: boolean): Prom
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    // Mark Secure only when actually served over HTTPS — a Secure cookie is
+    // dropped by browsers over plain HTTP (which broke login on http:// deploys).
+    secure: env.appUrl.startsWith("https://"),
     path: "/",
     expires: expiresAt,
   });
