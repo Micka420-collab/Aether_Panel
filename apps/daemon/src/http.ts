@@ -204,6 +204,19 @@ export function createHttpApp() {
     }),
   );
 
+  // Import an existing server from an uploaded archive (.zip / .tar.gz / .tgz / .tar).
+  // The body is the raw archive stream (Content-Type is non-JSON, so express.json
+  // leaves it untouched). `clear=1` wipes the volume first (keeping .aether/).
+  app.post(
+    "/api/servers/:id/import",
+    wrap(async (req, res) => {
+      const name = String(req.query.name ?? "archive.zip");
+      const clear = req.query.clear === "1";
+      const result = await files.importArchive(req.params.id!, name, req, { clear });
+      res.json(result);
+    }),
+  );
+
   // ── backups ───────────────────────────────────────────────────────────
   const backupSchema = z.object({ backupId: z.string().min(1), name: z.string().min(1), ignore: z.array(z.string()).optional() });
   app.post(

@@ -2,8 +2,12 @@ import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import { createReadStream, createWriteStream } from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
+import tar from "tar-fs";
+import unzipper from "unzipper";
 import type { FileEntry } from "@aether/shared";
 import { hostVolumePath } from "./docker.js";
+import { config } from "./config.js";
 
 const SERVER_ID_RE = /^[a-zA-Z0-9_-]{1,64}$/;
 
@@ -139,6 +143,120 @@ export async function saveUpload(serverId: string, dir: string, filename: string
     ws.on("error", reject);
     source.on("error", reject);
   });
+}
+
+const ARCHIVE_RE = /\.(zip|tar\.gz|tgz|tar)$/i;
+
+/**
+ * Import an existing server: accept an uploaded archive (.zip / .tar.gz / .tgz / .tar)
+ * and extract it into the server's volume — the core of "bring your own server".
+ *
+ * Safety:
+ *  - extraction happens in an isolated temp dir, with a per-entry zip-slip guard
+ *    (entries resolving outside the temp dir are skipped); tar-fs v3 blocks
+ *    traversal natively.
+ *  - a single wrapping top-level folder is stripped, so an archive of
+ *    "MyServer/world/…" lands as "world/…" (the common case for hand-zipped servers).
+ *  - `clear` wipes the destination first but always preserves the internal
+ *    `.aether/` spec dir the daemon needs to manage the server.
+ */
+export async function importArchive(
+  serverId: string,
+  filename: string,
+  source: NodeJS.ReadableStream,
+  opts: { clear?: boolean } = {},
+): Promise<{ files: number }> {
+  if (!SERVER_ID_RE.test(serverId)) throw new Error("invalid server id");
+  if (!ARCHIVE_RE.test(filename)) throw new Error("unsupported archive — use .zip, .tar.gz, .tgz or .tar");
+  const root = path.resolve(hostVolumePath(serverId));
+  await fs.mkdir(root, { recursive: true });
+
+  const lower = filename.toLowerCase();
+  const isZip = lower.endsWith(".zip");
+  const stamp = `${process.pid}-${serverId}`;
+  const tmpFile = path.join(config.dataDir, `.import-${stamp}${isZip ? ".zip" : ".tar"}`);
+  const tmpDir = path.join(config.dataDir, `.import-${stamp}.d`);
+
+  // 1. stream the upload to a temp file
+  await new Promise<void>((resolve, reject) => {
+    const ws = createWriteStream(tmpFile);
+    source.pipe(ws);
+    ws.on("finish", () => resolve());
+    ws.on("error", reject);
+    source.on("error", reject);
+  });
+
+  try {
+    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+    await fs.mkdir(tmpDir, { recursive: true });
+    const realTmp = fsSync.realpathSync(tmpDir);
+
+    // 2. extract into the isolated temp dir (path-traversal guarded)
+    if (isZip) {
+      const directory = await unzipper.Open.file(tmpFile);
+      for (const entry of directory.files) {
+        if (entry.type !== "File") continue;
+        const dest = path.resolve(realTmp, entry.path);
+        if (!within(realTmp, dest)) continue; // zip-slip: entry escapes the temp dir — skip it
+        await fs.mkdir(path.dirname(dest), { recursive: true });
+        await new Promise<void>((resolve, reject) => {
+          entry.stream().pipe(createWriteStream(dest)).on("finish", () => resolve()).on("error", reject);
+        });
+      }
+    } else {
+      await new Promise<void>((resolve, reject) => {
+        const rs = createReadStream(tmpFile);
+        const extract = tar.extract(realTmp); // tar-fs v3 rejects entries that escape
+        rs.on("error", reject);
+        extract.on("error", reject);
+        extract.on("finish", () => resolve());
+        if (lower.endsWith(".tar")) {
+          rs.pipe(extract);
+        } else {
+          const gz = zlib.createGunzip();
+          gz.on("error", reject);
+          rs.pipe(gz).pipe(extract);
+        }
+      });
+    }
+
+    // 3. strip a single wrapping directory if that's all the archive contains
+    let srcRoot = realTmp;
+    const top = (await fs.readdir(realTmp, { withFileTypes: true })).filter(
+      (e) => e.name !== "__MACOSX" && !e.name.startsWith("._"),
+    );
+    if (top.length === 1 && top[0]!.isDirectory()) srcRoot = path.join(realTmp, top[0]!.name);
+
+    // 4. optionally clear the destination (but keep the internal spec dir)
+    if (opts.clear) {
+      for (const entry of await fs.readdir(root)) {
+        if (entry === ".aether") continue;
+        await fs.rm(path.join(root, entry), { recursive: true, force: true });
+      }
+    }
+
+    // 5. merge the extracted tree into the volume, overwriting collisions
+    let files = 0;
+    const copyInto = async (dir: string, dest: string): Promise<void> => {
+      for (const e of await fs.readdir(dir, { withFileTypes: true })) {
+        if (e.name === "__MACOSX" || e.name === ".aether") continue;
+        const from = path.join(dir, e.name);
+        const to = path.join(dest, e.name);
+        if (e.isDirectory()) {
+          await fs.mkdir(to, { recursive: true });
+          await copyInto(from, to);
+        } else if (e.isFile()) {
+          await fs.copyFile(from, to);
+          files++;
+        }
+      }
+    };
+    await copyInto(srcRoot, root);
+    return { files };
+  } finally {
+    await fs.rm(tmpFile, { force: true }).catch(() => {});
+    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+  }
 }
 
 /** Best-effort recursive disk usage of the server's volume, in bytes. */

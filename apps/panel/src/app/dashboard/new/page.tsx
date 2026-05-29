@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Rocket, Check } from "lucide-react";
+import { Loader2, Rocket, Check, Upload, PackageOpen, Sparkles } from "lucide-react";
 import { api } from "@/lib/client";
 import { cn } from "@/lib/util";
 import { DEFAULT_PLANS } from "@/lib/plans";
@@ -29,6 +29,10 @@ export default function NewServerPage() {
   const [vars, setVars] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [deploying, setDeploying] = useState(false);
+  // "new" = fresh world · "import" = bring an existing server (upload its files)
+  const [mode, setMode] = useState<"new" | "import">("new");
+  const [archive, setArchive] = useState<File | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
 
   useEffect(() => {
     api<{ templates: TemplateView[] }>("/api/templates")
@@ -54,24 +58,64 @@ export default function NewServerPage() {
 
   async function deploy() {
     if (!selected) return;
+    if (mode === "import" && !archive) {
+      setError("Choose a .zip / .tar.gz archive of your existing server to import.");
+      return;
+    }
     setDeploying(true);
     setError(null);
     try {
+      setProgress(mode === "import" ? "Creating the server…" : null);
       const res = await api<{ id: string }>("/api/servers", {
         method: "POST",
         json: { name, templateId: selected.id, planSlug, variables: vars },
       });
+
+      if (mode === "import" && archive) {
+        setProgress(`Uploading & extracting ${archive.name}… this can take a while for large worlds.`);
+        const up = await fetch(
+          `/api/servers/${res.id}/import?name=${encodeURIComponent(archive.name)}&clear=1`,
+          { method: "POST", body: archive, credentials: "include" },
+        );
+        if (!up.ok) {
+          const t = await up.json().catch(() => ({} as any));
+          throw new Error(t.error || `Import failed (${up.status})`);
+        }
+      }
       router.push(`/dashboard/servers/${res.id}`);
     } catch (e: any) {
       setError(e.message);
       setDeploying(false);
+      setProgress(null);
     }
   }
 
   return (
     <div>
-      <h1 className="font-display text-3xl font-bold text-white">Deploy a new server</h1>
-      <p className="mt-1 text-sm text-white/50">Pick a game, tweak the essentials, and it&apos;s online in seconds.</p>
+      <h1 className="font-display text-3xl font-bold text-white">Deploy a server</h1>
+      <p className="mt-1 text-sm text-white/50">Start fresh, or import an existing Minecraft / Icarus server you already have.</p>
+
+      {/* mode: new world vs import existing */}
+      <div className="mt-5 inline-flex rounded-2xl border border-white/10 bg-white/[0.03] p-1">
+        <button
+          onClick={() => setMode("new")}
+          className={cn(
+            "flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition",
+            mode === "new" ? "bg-cyan/15 text-white" : "text-white/50 hover:text-white",
+          )}
+        >
+          <Sparkles className="h-4 w-4" /> New server
+        </button>
+        <button
+          onClick={() => setMode("import")}
+          className={cn(
+            "flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition",
+            mode === "import" ? "bg-cyan/15 text-white" : "text-white/50 hover:text-white",
+          )}
+        >
+          <PackageOpen className="h-4 w-4" /> Import existing
+        </button>
+      </div>
 
       {error && <div className="mt-4 rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">{error}</div>}
 
@@ -172,8 +216,48 @@ export default function NewServerPage() {
                 </div>
               ))}
 
-              <button onClick={deploy} disabled={deploying || !name} className="btn-primary w-full py-3 text-base">
-                {deploying ? <><Loader2 className="h-4 w-4 animate-spin" /> Deploying…</> : <><Rocket className="h-4 w-4" /> Deploy server</>}
+              {mode === "import" && (
+                <div className="rounded-2xl border border-cyan/25 bg-cyan/[0.05] p-4">
+                  <div className="mb-1 flex items-center gap-2 text-sm font-medium text-white">
+                    <Upload className="h-4 w-4 text-cyan" /> Your server archive
+                  </div>
+                  <p className="mb-3 text-xs text-white/45">
+                    Upload a <span className="text-white/70">.zip</span> or <span className="text-white/70">.tar.gz</span> of your
+                    existing server folder (world, configs, plugins/mods…). A single wrapping folder is detected automatically.
+                  </p>
+                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 bg-black/20 px-4 py-6 text-center text-sm text-white/60 transition hover:border-cyan/40 hover:text-white">
+                    <input
+                      type="file"
+                      accept=".zip,.tar.gz,.tgz,.tar,application/zip,application/gzip,application/x-tar"
+                      className="hidden"
+                      onChange={(e) => setArchive(e.target.files?.[0] ?? null)}
+                    />
+                    {archive ? (
+                      <span className="text-white">{archive.name} · {(archive.size / 1048576).toFixed(1)} MB</span>
+                    ) : (
+                      <span>Click to choose an archive…</span>
+                    )}
+                  </label>
+                  <p className="mt-2 text-[11px] text-white/35">
+                    Pick the same game type &amp; version as your original server above for the smoothest result.
+                  </p>
+                </div>
+              )}
+
+              {progress && (
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/60">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan" /> {progress}
+                </div>
+              )}
+
+              <button onClick={deploy} disabled={deploying || !name || (mode === "import" && !archive)} className="btn-primary w-full py-3 text-base">
+                {deploying ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> {mode === "import" ? "Importing…" : "Deploying…"}</>
+                ) : mode === "import" ? (
+                  <><PackageOpen className="h-4 w-4" /> Import &amp; deploy</>
+                ) : (
+                  <><Rocket className="h-4 w-4" /> Deploy server</>
+                )}
               </button>
             </div>
           )}

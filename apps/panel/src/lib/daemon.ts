@@ -84,6 +84,38 @@ export class DaemonClient {
     return this.req<void>("DELETE", `/api/servers/${serverId}/files?path=${encodeURIComponent(path)}`);
   }
 
+  /**
+   * Import an existing server: stream an uploaded archive straight through to the
+   * node, which extracts it into the server volume. `body` is forwarded as-is
+   * (a web ReadableStream from the incoming request) without buffering.
+   */
+  async importArchive(
+    serverId: string,
+    filename: string,
+    body: ReadableStream<Uint8Array> | Buffer,
+    clear: boolean,
+  ): Promise<{ files: number }> {
+    const url = `${this.base}/api/servers/${serverId}/import?name=${encodeURIComponent(filename)}&clear=${clear ? 1 : 0}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${this.node.tokenSecret}`, "Content-Type": "application/octet-stream" },
+      body: body as any,
+      // Required by undici to stream a request body.
+      duplex: "half",
+      cache: "no-store",
+    } as RequestInit & { duplex: "half" });
+    if (!res.ok) {
+      let msg = `daemon ${res.status}`;
+      try {
+        msg = (await res.json())?.error ?? msg;
+      } catch {
+        /* noop */
+      }
+      throw new Error(msg);
+    }
+    return (await res.json()) as { files: number };
+  }
+
   // backups
   createBackup(serverId: string, backupId: string, name: string, ignore?: string[]) {
     return this.req<BackupMeta>("POST", `/api/servers/${serverId}/backups`, { backupId, name, ignore });

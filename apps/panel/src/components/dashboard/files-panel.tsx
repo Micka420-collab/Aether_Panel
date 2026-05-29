@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import {
-  Folder, FileText, ChevronRight, Save, Trash2, FolderPlus, Loader2, ArrowUp, X,
+  Folder, FileText, ChevronRight, Save, Trash2, FolderPlus, Loader2, ArrowUp, X, Upload,
 } from "lucide-react";
 import type { FileEntry } from "@aether/shared";
 import { api } from "@/lib/client";
@@ -14,6 +14,7 @@ export function FilesPanel({ id, canWrite, canDelete }: { id: string; canWrite: 
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<{ path: string; content: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const list = useCallback(async (p: string) => {
     setLoading(true);
@@ -68,6 +69,27 @@ export function FilesPanel({ id, canWrite, canDelete }: { id: string; canWrite: 
     list(path);
   }
 
+  async function importArchive(file: File) {
+    setImporting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/servers/${id}/import?name=${encodeURIComponent(file.name)}&clear=0`, {
+        method: "POST",
+        body: file,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const t = await res.json().catch(() => ({} as any));
+        throw new Error(t.error || `Import failed (${res.status})`);
+      }
+      list("/");
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
   const parent = path === "/" ? null : path.split("/").slice(0, -1).join("/") || "/";
   const crumbs = path.split("/").filter(Boolean);
 
@@ -84,9 +106,25 @@ export function FilesPanel({ id, canWrite, canDelete }: { id: string; canWrite: 
           ))}
         </div>
         {canWrite && (
-          <button onClick={mkdir} className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white">
-            <FolderPlus className="h-4 w-4" /> New folder
-          </button>
+          <div className="flex items-center gap-4">
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs text-white/50 hover:text-white" title="Upload a .zip / .tar.gz and extract it into this server">
+              <input
+                type="file"
+                accept=".zip,.tar.gz,.tgz,.tar,application/zip,application/gzip,application/x-tar"
+                className="hidden"
+                disabled={importing}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.currentTarget.value = "";
+                  if (f) importArchive(f);
+                }}
+              />
+              {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Import archive
+            </label>
+            <button onClick={mkdir} className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white">
+              <FolderPlus className="h-4 w-4" /> New folder
+            </button>
+          </div>
         )}
       </div>
 
