@@ -2,6 +2,10 @@
 node_modules/
 .pnp
 .pnp.js
+# Not committed: an npm-version-specific lockfile crashed `npm install` on
+# older npm (10.x) with "Exit handler never called". We use `npm install`
+# (not `npm ci`) everywhere, so a fresh resolve keeps every environment working.
+package-lock.json
 
 # Builds
 dist/
