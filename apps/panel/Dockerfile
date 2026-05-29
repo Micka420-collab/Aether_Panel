@@ -5,10 +5,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Build needs a (placeholder) DATABASE_URL for prisma generate; no DB is touched.
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
 
-COPY package.json package-lock.json* tsconfig.base.json ./
-COPY packages ./packages
-COPY apps/panel ./apps/panel
-RUN npm install --no-audit --no-fund
+# Copy the whole monorepo source (the root .dockerignore excludes node_modules,
+# .next, .env, .git) so all npm workspaces match the lockfile and devDeps
+# (typescript/tsc, etc.) install & hoist correctly.
+COPY . .
+RUN npm install --include=dev --no-audit --no-fund
 
 RUN npm run build:shared \
  && npm run db:generate --workspace @aether/panel \
