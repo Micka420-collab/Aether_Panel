@@ -50,10 +50,10 @@ services:
       CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID:-}
       CURSEFORGE_API_KEY: ${CURSEFORGE_API_KEY:-}
       ALERT_WEBHOOK: ${ALERT_WEBHOOK:-}
+    # Not published to the host — Caddy reaches the panel over the internal
+    # network. This keeps the panel off 0.0.0.0 and forces traffic through TLS.
     expose:
       - "3000"
-    ports:
-      - "3000:3000"
 
   daemon:
     build:

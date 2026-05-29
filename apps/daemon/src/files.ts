@@ -1,21 +1,57 @@
 import fs from "node:fs/promises";
+import fsSync from "node:fs";
 import { createReadStream, createWriteStream } from "node:fs";
 import path from "node:path";
 import type { FileEntry } from "@aether/shared";
 import { hostVolumePath } from "./docker.js";
 
+const SERVER_ID_RE = /^[a-zA-Z0-9_-]{1,64}$/;
+
+function within(root: string, p: string): boolean {
+  const rootWithSep = root.endsWith(path.sep) ? root : root + path.sep;
+  return p === root || p.startsWith(rootWithSep);
+}
+
 /**
  * Resolve a user-supplied relative path against a server's volume root,
- * guaranteeing the result stays inside the jail (no `..` traversal, no
- * absolute escapes). Throws on any attempt to break out.
+ * guaranteeing the result stays inside the jail. Defends against:
+ *  - `..` traversal / absolute escapes (lexical check), and
+ *  - SYMLINK escapes: the deepest existing ancestor is realpath()'d and
+ *    re-validated, so a symlink planted inside the volume pointing outside
+ *    cannot be followed by the host-side daemon.
  */
 export function safeResolve(serverId: string, rel: string): string {
+  if (!SERVER_ID_RE.test(serverId)) throw new Error("invalid server id");
   const root = path.resolve(hostVolumePath(serverId));
   const clean = rel.replace(/\\/g, "/").replace(/^\/+/, "");
   const resolved = path.resolve(root, clean);
-  const rootWithSep = root.endsWith(path.sep) ? root : root + path.sep;
-  if (resolved !== root && !resolved.startsWith(rootWithSep)) {
-    throw new Error("path escapes server volume");
+  if (!within(root, resolved)) throw new Error("path escapes server volume");
+
+  // Symlink-safe re-check against the real filesystem.
+  let realRoot: string;
+  try {
+    realRoot = fsSync.realpathSync(root);
+  } catch {
+    // volume not created yet (new server) — lexical check already passed
+    return resolved;
+  }
+  let probe = resolved;
+  // walk up to the deepest path that actually exists, then realpath it
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    try {
+      const real = fsSync.realpathSync(probe);
+      if (!within(realRoot, real)) throw new Error("path escapes server volume (symlink)");
+      break;
+    } catch (e: any) {
+      if (e?.code === "ENOENT") {
+        const parent = path.dirname(probe);
+        if (parent === probe) break;
+        probe = parent;
+        continue;
+      }
+      throw e;
+    }
   }
   return resolved;
 }

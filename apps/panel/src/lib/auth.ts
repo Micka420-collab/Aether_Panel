@@ -5,6 +5,7 @@ import { cookies, headers } from "next/headers";
 import type { User } from "@prisma/client";
 import { db } from "./db";
 import { randomToken, sha256, encrypt, decrypt } from "./crypto";
+import { clientIp } from "./ratelimit";
 
 export const SESSION_COOKIE = "aether_session";
 const SESSION_TTL_DAYS = 30;
@@ -15,6 +16,15 @@ export async function hashPassword(plain: string): Promise<string> {
 }
 export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
   return bcrypt.compare(plain, hash);
+}
+
+// A real bcrypt hash to verify against when the account doesn't exist, so the
+// login path takes ~the same time whether or not the email is registered
+// (defeats the account-enumeration timing oracle).
+let dummyHash: string | null = null;
+export async function getDummyHash(): Promise<string> {
+  if (!dummyHash) dummyHash = await bcrypt.hash("aether-nonexistent-account", 12);
+  return dummyHash;
 }
 
 // ── sessions (DB-backed, opaque cookie token) ────────────────────────────
@@ -28,7 +38,7 @@ export async function createSession(userId: string, mfaCompleted: boolean): Prom
       tokenHash: sha256(token),
       mfaCompleted,
       userAgent: h.get("user-agent")?.slice(0, 255) ?? null,
-      ip: (h.get("x-forwarded-for") ?? "").split(",")[0]?.trim() || null,
+      ip: clientIp(h),
       expiresAt,
     },
   });

@@ -53,6 +53,12 @@ export async function createServer(user: User, input: CreateServerInput) {
     swapMb: input.limits?.swapMb ?? 0,
   };
 
+  // SECURITY: only allow images declared by the template — never an arbitrary
+  // user-supplied image (which the daemon would pull & run on the host).
+  const allowedImages = new Set(Object.values(template.dockerImages));
+  if (input.dockerImage && !allowedImages.has(input.dockerImage)) {
+    throw new HttpError(422, "Invalid image for this game template");
+  }
   const dockerImage = input.dockerImage ?? template.defaultImage;
 
   // Decide each port number up front (primary first so offsets are relative to it).

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { route, json } from "@/lib/http";
 import { authApi, requireApiScope } from "@/lib/api-auth";
-import { getServerContext } from "@/lib/access";
+import { getServerContext, assertScope } from "@/lib/access";
 import { DaemonClient } from "@/lib/daemon";
 import { audit } from "@/lib/audit";
 
@@ -12,7 +12,9 @@ export const POST = route(async (req, ctx: { params: { id: string } }) => {
   const principal = await authApi(req);
   const c = await getServerContext(principal.user, ctx.params.id);
   const { signal } = schema.parse(await req.json());
-  requireApiScope(principal, signal === "start" ? "control.start" : "control.stop");
+  const scope = signal === "start" ? "control.start" : "control.stop";
+  requireApiScope(principal, scope);
+  assertScope(c, scope);
 
   await new DaemonClient(c.node).power(c.server.id, signal);
   await db.server.update({

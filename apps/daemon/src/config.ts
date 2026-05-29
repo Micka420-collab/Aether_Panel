@@ -31,4 +31,10 @@ export const config = {
   hostKeyPath: env("SFTP_HOST_KEY", isWindows ? `${os.tmpdir()}\\aether\\ssh_host_key` : "/var/lib/aether/ssh_host_key"),
 } as const;
 
+// Fail closed in production: never run with a placeholder / weak node token.
+const DEV_TOKENS = new Set(["dev-daemon-token-change-me", "change-me-shared-secret-between-panel-and-daemon"]);
+if (process.env.NODE_ENV === "production" && (config.token.length < 16 || DEV_TOKENS.has(config.token))) {
+  throw new Error("DAEMON_TOKEN must be a strong secret in production (>=16 chars, not a placeholder).");
+}
+
 export type Config = typeof config;

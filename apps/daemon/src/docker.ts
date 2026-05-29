@@ -153,8 +153,14 @@ export async function buildContainer(spec: ServerBuildSpec): Promise<void> {
       PidsLimit: spec.limits.pids,
       OomKillDisable: spec.limits.oomDisabled,
       RestartPolicy: { Name: "no" },
-      // Baseline hardening — escalate per-template in production (see deploy docs).
+      // Hardening: no privilege escalation + drop dangerous capabilities a game
+      // server never needs (bounds the blast radius of a compromised container).
+      // Keep the default seccomp profile. Escalate per-template if a game needs more.
       SecurityOpt: ["no-new-privileges"],
+      CapDrop: [
+        "SYS_ADMIN", "SYS_MODULE", "SYS_RAWIO", "SYS_PTRACE", "SYS_BOOT", "SYS_TIME",
+        "NET_ADMIN", "NET_RAW", "DAC_READ_SEARCH", "MKNOD", "AUDIT_WRITE", "SETFCAP",
+      ],
       DnsSearch: [],
     },
   };

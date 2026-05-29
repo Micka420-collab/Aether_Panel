@@ -17,6 +17,12 @@ export function sha256(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
 }
 
+/** Keyed HMAC-SHA256 (hex). Used for recovery codes / API keys so a DB dump
+ *  cannot be brute-forced without also stealing AUTH_SECRET. */
+export function hmac(input: string): string {
+  return crypto.createHmac("sha256", env.authSecret).update(input).digest("hex");
+}
+
 /** A short human-friendly code like "AB12-CD34" for device-auth user codes. */
 export function userCode(): string {
   const a = randomString(4).toUpperCase();
@@ -25,22 +31,29 @@ export function userCode(): string {
 }
 
 // AES-256-GCM symmetric encryption for secrets at rest (TOTP secrets, etc.).
-function key(): Buffer {
-  return crypto.createHash("sha256").update(env.authSecret).digest();
+// The key is derived from AUTH_SECRET with HKDF-SHA256 + a domain-separation
+// label (so it never collides with session/JWT use). Ciphertext is versioned.
+const ENC_VERSION = "v1";
+function aesKey(): Buffer {
+  const salt = Buffer.from("aether-kdf-salt-v1");
+  const info = Buffer.from("aether-secret-encryption-v1");
+  return Buffer.from(crypto.hkdfSync("sha256", env.authSecret, salt, info, 32));
 }
 
 export function encrypt(plain: string): string {
   const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv("aes-256-gcm", key(), iv);
+  const cipher = crypto.createCipheriv("aes-256-gcm", aesKey(), iv);
   const enc = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
-  return `${iv.toString("base64")}.${tag.toString("base64")}.${enc.toString("base64")}`;
+  return `${ENC_VERSION}.${iv.toString("base64")}.${tag.toString("base64")}.${enc.toString("base64")}`;
 }
 
 export function decrypt(payload: string): string {
-  const [ivB, tagB, dataB] = payload.split(".");
-  if (!ivB || !tagB || !dataB) throw new Error("bad ciphertext");
-  const decipher = crypto.createDecipheriv("aes-256-gcm", key(), Buffer.from(ivB, "base64"));
+  const parts = payload.split(".");
+  // versioned format: v1.<iv>.<tag>.<data>
+  const [version, ivB, tagB, dataB] = parts.length === 4 ? parts : ["", ...parts];
+  if (version !== ENC_VERSION || !ivB || !tagB || !dataB) throw new Error("bad ciphertext");
+  const decipher = crypto.createDecipheriv("aes-256-gcm", aesKey(), Buffer.from(ivB, "base64"));
   decipher.setAuthTag(Buffer.from(tagB, "base64"));
   return Buffer.concat([decipher.update(Buffer.from(dataB, "base64")), decipher.final()]).toString("utf8");
 }

@@ -23,5 +23,7 @@ COPY --from=build /app /app
 WORKDIR /app/apps/panel
 EXPOSE 3000
 # Sync the schema to the DB (idempotent), seed defaults, then start.
-# `db push` creates/updates tables from schema.prisma without migration files.
-CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss && npm run db:seed && npm run start"]
+# `db push` creates tables from schema.prisma; WITHOUT --accept-data-loss it
+# refuses destructive changes instead of silently dropping data. For production,
+# adopt `prisma migrate deploy` with checked-in migrations.
+CMD ["sh", "-c", "npx prisma db push --skip-generate && npm run db:seed && npm run start"]

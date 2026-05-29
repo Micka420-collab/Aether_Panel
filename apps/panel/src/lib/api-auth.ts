@@ -4,7 +4,8 @@ import type { User } from "@prisma/client";
 import { hasScope, type Scope } from "@aether/shared";
 import { db } from "./db";
 import { env } from "./env";
-import { sha256, randomString } from "./crypto";
+import { sha256, randomString, constantTimeEqual } from "./crypto";
+import { clientIp } from "./ratelimit";
 import { HttpError } from "./auth";
 
 const secret = () => new TextEncoder().encode(env.apiJwtSecret);
@@ -65,13 +66,13 @@ export async function authApi(req: Request): Promise<ApiPrincipal> {
     const parts = token.split("_");
     const prefix = `${parts[0]}_${parts[1]}`;
     const record = await db.apiKey.findUnique({ where: { prefix }, include: { user: true } });
-    if (!record || record.keyHash !== sha256(token)) throw new HttpError(401, "Invalid API key");
+    if (!record || !constantTimeEqual(record.keyHash, sha256(token))) throw new HttpError(401, "Invalid API key");
     if (record.expiresAt && record.expiresAt < new Date()) throw new HttpError(401, "API key expired");
-    // optional IP allowlist
+    // optional IP allowlist (uses the trusted client IP, not a spoofable XFF)
     const allow = (record.ipAllowlist as string[]) ?? [];
     if (allow.length) {
-      const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0]?.trim();
-      if (ip && !allow.includes(ip)) throw new HttpError(403, "IP not allowed for this key");
+      const ip = clientIp(req.headers);
+      if (!allow.includes(ip)) throw new HttpError(403, "IP not allowed for this key");
     }
     db.apiKey.update({ where: { id: record.id }, data: { lastUsedAt: new Date() } }).catch(() => {});
     return { user: record.user, scopes: (record.scopes as string[]) ?? [], via: "apikey" };

@@ -14,8 +14,20 @@
 		-Server
 	}
 
+	# Limit request body size on the API (defence against memory-exhaustion).
+	@api path /api/*
+	request_body @api {
+		max_size 6MB
+	}
+
 	# Panel (Next.js). WebSocket upgrades are passed through automatically.
-	reverse_proxy panel:3000
+	reverse_proxy panel:3000 {
+		# Set a NON-forgeable client-IP header from the real socket peer. Caddy
+		# overwrites any value the client tried to send, so the panel's rate
+		# limiter and API-key IP allowlist see the true IP (not a spoofed XFF).
+		header_up X-Real-Client-IP {http.request.remote.host}
+		header_up X-Forwarded-For {http.request.remote.host}
+	}
 }
 
 # OPTIONAL — front the daemon WebSocket with TLS on a subdomain.

@@ -12,7 +12,7 @@ export const GET = route(async (req, ctx: { params: { id: string } }) => {
   return json(await new DaemonClient(c.node).listFiles(c.server.id, path));
 });
 
-const writeSchema = z.object({ path: z.string().min(1), content: z.string() });
+const writeSchema = z.object({ path: z.string().min(1).max(1024), content: z.string().max(6 * 1024 * 1024) });
 export const PUT = route(async (req, ctx: { params: { id: string } }) => {
   const user = await requireUser();
   const c = await getServerContext(user, ctx.params.id);

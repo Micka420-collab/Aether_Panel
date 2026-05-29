@@ -1,6 +1,7 @@
 import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import os from "node:os";
+import crypto from "node:crypto";
 import { z } from "zod";
 import type { ServerBuildSpec } from "@aether/shared";
 import { config } from "./config.js";
@@ -10,9 +11,23 @@ import { docker } from "./docker.js";
 import * as files from "./files.js";
 import * as backups from "./backups.js";
 
+/** Constant-time bearer-token check (hash to equalise length, avoid timing leak). */
+function tokenMatches(presented: string): boolean {
+  const a = crypto.createHash("sha256").update(presented).digest();
+  const b = crypto.createHash("sha256").update(config.token).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
+/** Strip CR/LF/quotes so a filename can't inject extra response headers. */
+function safeFilename(name: string): string {
+  return (name || "download").replace(/[\r\n"\\]/g, "_").replace(/[^\x20-\x7e]/g, "_").slice(0, 200);
+}
+
 export function createHttpApp() {
   const app = express();
-  app.use(cors());
+  // The daemon is a server-to-server control plane (panel + the token-scoped
+  // browser WS). Restrict CORS to the configured panel origin.
+  app.use(cors({ origin: config.panelUrl || true }));
   app.use(express.json({ limit: "12mb" }));
 
   // ── auth: every /api route (except health) requires the node bearer token ──
@@ -20,7 +35,7 @@ export function createHttpApp() {
     if (req.path === "/api/health") return next();
     const auth = req.headers.authorization ?? "";
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-    if (token !== config.token) return res.status(401).json({ error: "unauthorized" });
+    if (!token || !tokenMatches(token)) return res.status(401).json({ error: "unauthorized" });
     next();
   });
 
@@ -173,7 +188,7 @@ export function createHttpApp() {
     "/api/servers/:id/files/download",
     wrap(async (req, res) => {
       const file = String(req.query.path ?? "");
-      const name = file.split("/").pop() || "download";
+      const name = safeFilename(file.split("/").pop() || "download");
       res.setHeader("Content-Disposition", `attachment; filename="${name}"`);
       files.createDownloadStream(req.params.id!, file).on("error", () => res.destroy()).pipe(res);
     }),
@@ -220,7 +235,7 @@ export function createHttpApp() {
   app.get(
     "/api/servers/:id/backups/:backupId/download",
     wrap(async (req, res) => {
-      res.setHeader("Content-Disposition", `attachment; filename="${req.params.backupId}.tar.gz"`);
+      res.setHeader("Content-Disposition", `attachment; filename="${safeFilename(req.params.backupId + ".tar.gz")}"`);
       backups.downloadBackup(req.params.id!, req.params.backupId!).on("error", () => res.destroy()).pipe(res);
     }),
   );

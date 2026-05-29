@@ -15,9 +15,10 @@ export function errorResponse(e: unknown) {
   if (e instanceof ZodError) {
     return NextResponse.json({ error: "Validation failed", issues: e.flatten() }, { status: 422 });
   }
-  const message = e instanceof Error ? e.message : "Internal error";
+  // Log the real error server-side, but never leak internal/Prisma/decryption
+  // details to the client.
   console.error("[api]", e);
-  return NextResponse.json({ error: message }, { status: 500 });
+  return NextResponse.json({ error: "Internal error" }, { status: 500 });
 }
 
 /** Wrap a route handler so thrown HttpError/ZodError become clean responses. */

@@ -38,9 +38,19 @@ export function hit(key: string, limit: number, windowMs: number): RateResult {
   return { ok, limit, remaining: Math.max(0, limit - w.count), retryAfter: ok ? 0 : Math.ceil((w.resetAt - now) / 1000) };
 }
 
-/** Best-effort client IP from common proxy headers. */
-export function clientIp(headers: Headers): string {
+/**
+ * Client IP for rate limiting / allowlists. Prefers headers a trusted upstream
+ * sets from the real socket peer and that clients cannot forge:
+ *  - X-Real-Client-IP: set by the bundled Caddy (overwrites any client value)
+ *  - CF-Connecting-IP: set by Cloudflare
+ * Falls back to the (spoofable) X-Forwarded-For only if neither is present.
+ */
+export function clientIp(headers: { get(name: string): string | null }): string {
+  const real = headers.get("x-real-client-ip");
+  if (real) return real.trim();
+  const cf = headers.get("cf-connecting-ip");
+  if (cf) return cf.trim();
   const xff = headers.get("x-forwarded-for");
   if (xff) return xff.split(",")[0]!.trim();
-  return headers.get("x-real-ip") || headers.get("cf-connecting-ip") || "unknown";
+  return headers.get("x-real-ip") || "unknown";
 }

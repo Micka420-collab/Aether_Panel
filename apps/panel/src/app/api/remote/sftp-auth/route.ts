@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { verifyPassword, HttpError } from "@/lib/auth";
 import { json, route } from "@/lib/http";
 import { env } from "@/lib/env";
+import { sha256, constantTimeEqual } from "@/lib/crypto";
 import { hasScope, ALL_SCOPES, type Scope } from "@aether/shared";
 import { audit } from "@/lib/audit";
 
@@ -17,7 +18,11 @@ const schema = z.object({ username: z.string().min(1), password: z.string().min(
  */
 export const POST = route(async (req) => {
   const auth = req.headers.get("authorization") ?? "";
-  if (auth !== `Bearer ${env.daemonToken}`) throw new HttpError(401, "unauthorized node");
+  const presented = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  // constant-time, length-equalised comparison of the high-value node token
+  if (!presented || !constantTimeEqual(sha256(presented), sha256(env.daemonToken))) {
+    throw new HttpError(401, "unauthorized node");
+  }
 
   const { username, password } = schema.parse(await req.json());
   const dot = username.lastIndexOf(".");
