@@ -40,7 +40,15 @@ gen() { openssl rand -base64 48 | tr -d '\n/+=' | cut -c1-48; }
 
 if [ ! -f .env ]; then
   say "Generating .env with fresh secrets…"
-  PUBLIC_IP="${NODE_PUBLIC_IP:-$(curl -fsSL https://api.ipify.org 2>/dev/null || echo 127.0.0.1)}"
+  # The node address (DEFAULT_NODE_FQDN / NODE_PUBLIC_IP) must be reachable BOTH
+  # by the panel container AND by the browsers that open the live console — i.e.
+  # an address that resolves on the same network as the clients. Behind a home
+  # router/NAT, the public WAN IP (api.ipify.org) is usually NOT reachable from
+  # inside (no hairpin NAT) and would make server provisioning fail with
+  # "fetch failed". So prefer the primary LAN IP. For a box that is directly
+  # internet-reachable (port-forwarded), pass NODE_PUBLIC_IP=1.2.3.4 to override.
+  LAN_IP="$(ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p' | head -1)"
+  PUBLIC_IP="${NODE_PUBLIC_IP:-${LAN_IP:-$(curl -fsSL https://api.ipify.org 2>/dev/null || echo 127.0.0.1)}}"
   DOMAIN="${APP_DOMAIN:-:80}"
   # Caddy fronts the panel on :80 (the panel's own port 3000 isn't published).
   APP_URL="http://${PUBLIC_IP}"
