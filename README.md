@@ -10,6 +10,8 @@
 stunning glass/bento control panel, wake-on-join sleeping, one-click mods,
 layered DDoS protection, and a clean API built for your **own launcher**.
 
+**🌐 English** · [Français](README.fr.md)
+
 <br/>
 
 [![CI](https://github.com/Micka420-collab/Aether_Panel/actions/workflows/ci.yml/badge.svg)](https://github.com/Micka420-collab/Aether_Panel/actions/workflows/ci.yml)
@@ -30,7 +32,37 @@ layered DDoS protection, and a clean API built for your **own launcher**.
 
 <br/>
 
+<img src="docs/screenshots/demo.svg" width="760" alt="Aether console — deploying a server" />
+
+<br/>
+
 [**Features**](#-features) · [**Architecture**](#-architecture) · [**Quick start**](#-quick-start) · [**Launcher API**](#-connect-your-launcher) · [**DDoS protection**](#-ddos-protection-layered) · [**Security**](#-security)
+
+</div>
+
+---
+
+## 📸 Screenshots
+
+<div align="center">
+
+<img src="docs/screenshots/hero.png" width="900" alt="Aether landing page" />
+
+<br/><br/>
+
+> **In-app dashboard** — live console, real-time stats, files, mods, schedules & more
+> <br/><sub>(design-accurate preview; the dashboard needs a live database + node)</sub>
+
+<img src="docs/screenshots/dashboard.png" width="900" alt="Aether dashboard — server console" />
+
+<br/><br/>
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/login.png" alt="Sign in" /><p align="center"><sub>Sign in (TOTP-2FA ready)</sub></p></td>
+<td width="50%"><img src="docs/screenshots/docs-launcher.png" alt="Launcher API docs" /><p align="center"><sub>Launcher API documentation</sub></p></td>
+</tr>
+</table>
 
 </div>
 
@@ -241,7 +273,7 @@ docker-compose.yml   one-host stack
 
 ## 🗺️ Roadmap
 
-Tracked in [`docs/SECURITY-AUDIT.md`](docs/SECURITY-AUDIT.md) and the issues:
+Tracked in [`docs/SECURITY-AUDIT.md`](docs/SECURITY-AUDIT.md):
 Stripe billing · Microsoft/Discord OAuth login · Pterodactyl egg import ·
 multi-node scheduling · Redis-backed rate-limit · Next.js major upgrade.
 

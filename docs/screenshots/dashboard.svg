@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="Inter, system-ui, sans-serif" width="1280" height="720">
+  <defs>
+    <linearGradient id="cv" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#22B8D8"/><stop offset="100%" stop-color="#7C5CFF"/></linearGradient>
+    <radialGradient id="orb" cx="50%" cy="0%" r="80%"><stop offset="0%" stop-color="#7C5CFF" stop-opacity="0.12"/><stop offset="60%" stop-color="#07090F" stop-opacity="0"/></radialGradient>
+  </defs>
+
+  <!-- backdrop -->
+  <rect width="1280" height="720" fill="#07090F"/>
+  <rect width="1280" height="720" fill="url(#orb)"/>
+
+  <!-- sidebar -->
+  <rect x="0" y="0" width="248" height="720" fill="#0A0E18"/>
+  <line x1="248" y1="0" x2="248" y2="720" stroke="#ffffff" stroke-opacity="0.07"/>
+  <!-- logo -->
+  <rect x="24" y="26" width="26" height="26" rx="7" fill="#0E1422"/>
+  <path d="M37 31 L46 50 H41 L37 40 L33 50 H28 Z" fill="url(#cv)"/>
+  <text x="60" y="44" fill="#fff" font-size="17" font-weight="600">Aether</text>
+  <!-- new server button -->
+  <rect x="24" y="70" width="200" height="40" rx="11" fill="url(#cv)"/>
+  <text x="124" y="95" fill="#fff" font-size="13.5" font-weight="600" text-anchor="middle">+  New server</text>
+  <!-- nav -->
+  <rect x="20" y="130" width="208" height="40" rx="11" fill="#ffffff" fill-opacity="0.10"/>
+  <text x="44" y="155" fill="#fff" font-size="13.5">▣  Servers</text>
+  <text x="44" y="199" fill="#9aa6b8" font-size="13.5">💳  Billing</text>
+  <text x="44" y="239" fill="#9aa6b8" font-size="13.5">⚙  Account</text>
+  <text x="44" y="279" fill="#9aa6b8" font-size="13.5">🛡  Admin</text>
+  <text x="44" y="319" fill="#9aa6b8" font-size="13.5">📖  Docs</text>
+  <!-- user chip -->
+  <rect x="20" y="636" width="208" height="62" rx="13" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.08"/>
+  <circle cx="48" cy="667" r="16" fill="url(#cv)"/>
+  <text x="48" y="672" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">MD</text>
+  <text x="74" y="662" fill="#fff" font-size="12.5" font-weight="600">micka</text>
+  <text x="74" y="679" fill="#7a8699" font-size="11">micka@aether.host</text>
+
+  <!-- main -->
+  <text x="288" y="44" fill="#8b95a7" font-size="12.5">←  All servers</text>
+
+  <!-- header card -->
+  <rect x="288" y="60" width="968" height="116" rx="16" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.09"/>
+  <rect x="312" y="84" width="58" height="58" rx="14" fill="#0E1422" stroke="#ffffff" stroke-opacity="0.08"/>
+  <text x="341" y="124" font-size="30" text-anchor="middle">🟩</text>
+  <text x="388" y="104" fill="#fff" font-size="22" font-weight="700">Survival SMP</text>
+  <!-- state badge -->
+  <rect x="560" y="88" width="96" height="24" rx="12" fill="#34D399" fill-opacity="0.12" stroke="#34D399" stroke-opacity="0.4"/>
+  <circle cx="576" cy="100" r="4" fill="#34D399"/>
+  <text x="588" y="104" fill="#34D399" font-size="12" font-weight="600">Running</text>
+  <text x="388" y="132" fill="#8FE3F2" font-size="13.5" font-family="ui-monospace, monospace">play.aether.host  ⧉</text>
+  <!-- power buttons -->
+  <g font-size="12.5" font-weight="600">
+    <rect x="892" y="98" width="78" height="36" rx="10" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.1"/><text x="931" y="121" fill="#34D399" text-anchor="middle">▶ Start</text>
+    <rect x="980" y="98" width="92" height="36" rx="10" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.1"/><text x="1026" y="121" fill="#e6edf6" text-anchor="middle">⟳ Restart</text>
+    <rect x="1082" y="98" width="78" height="36" rx="10" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.1"/><text x="1121" y="121" fill="#FBBF24" text-anchor="middle">■ Stop</text>
+    <rect x="1170" y="98" width="44" height="36" rx="10" fill="#F85149" fill-opacity="0.14" stroke="#F85149" stroke-opacity="0.4"/><text x="1192" y="121" fill="#F85149" text-anchor="middle">⚡</text>
+  </g>
+
+  <!-- stat tiles -->
+  <g>
+    <!-- tile template -->
+    <g>
+      <rect x="312" y="150" width="176" height="0" /> <!-- spacer -->
+    </g>
+  </g>
+  <!-- 5 tiles row -->
+  <g font-size="11.5">
+    <!-- positions -->
+    <g>
+      <rect x="312" y="152" width="172" height="0"/>
+    </g>
+  </g>
+  <!-- draw tiles explicitly -->
+  <g>
+    <!-- CPU --><rect x="312" y="152" width="171" height="0"/>
+  </g>
+
+  <!-- (tiles drawn below the header card region from y=192) -->
+  <g>
+    <!-- Tile 1 CPU -->
+    <rect x="288" y="192" width="186" height="74" rx="12" fill="#000" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.05"/>
+    <text x="306" y="218" fill="#7a8699" font-size="11.5">⚡ CPU</text>
+    <text x="306" y="246" fill="#fff" font-size="19" font-weight="700">38%</text>
+    <text x="306" y="261" fill="#5d6b7e" font-size="10">76% raw</text>
+    <!-- Tile 2 Memory -->
+    <rect x="486" y="192" width="186" height="74" rx="12" fill="#000" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.05"/>
+    <text x="504" y="218" fill="#7a8699" font-size="11.5">▣ Memory</text>
+    <text x="504" y="246" fill="#fff" font-size="19" font-weight="700">3.2 GB</text>
+    <text x="504" y="261" fill="#5d6b7e" font-size="10">of 6 GB</text>
+    <!-- Tile 3 Disk -->
+    <rect x="684" y="192" width="186" height="74" rx="12" fill="#000" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.05"/>
+    <text x="702" y="218" fill="#7a8699" font-size="11.5">▤ Disk</text>
+    <text x="702" y="246" fill="#fff" font-size="19" font-weight="700">4.1 GB</text>
+    <text x="702" y="261" fill="#5d6b7e" font-size="10">of 50 GB</text>
+    <!-- Tile 4 Players -->
+    <rect x="882" y="192" width="186" height="74" rx="12" fill="#000" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.05"/>
+    <text x="900" y="218" fill="#7a8699" font-size="11.5">👥 Players</text>
+    <text x="900" y="246" fill="#fff" font-size="19" font-weight="700">7/20</text>
+    <text x="900" y="261" fill="#5d6b7e" font-size="10">online</text>
+    <!-- Tile 5 Uptime -->
+    <rect x="1080" y="192" width="176" height="74" rx="12" fill="#000" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.05"/>
+    <text x="1098" y="218" fill="#7a8699" font-size="11.5">⏱ Uptime</text>
+    <text x="1098" y="246" fill="#fff" font-size="19" font-weight="700">2d 4h</text>
+  </g>
+
+  <!-- tabs -->
+  <g font-size="13">
+    <text x="290" y="300" fill="#fff" font-weight="600">▸ Console</text>
+    <text x="372" y="300" fill="#7a8699">Files</text>
+    <text x="424" y="300" fill="#7a8699">Content</text>
+    <text x="492" y="300" fill="#7a8699">Schedules</text>
+    <text x="574" y="300" fill="#7a8699">Settings</text>
+    <text x="646" y="300" fill="#7a8699">Backups</text>
+    <text x="716" y="300" fill="#7a8699">Network</text>
+    <text x="786" y="300" fill="#7a8699">Sub-users</text>
+    <rect x="288" y="312" width="74" height="2.5" rx="1" fill="#22B8D8"/>
+    <line x1="288" y1="313" x2="1256" y2="313" stroke="#ffffff" stroke-opacity="0.07"/>
+  </g>
+
+  <!-- console panel -->
+  <rect x="288" y="332" width="968" height="360" rx="14" fill="#ffffff" fill-opacity="0.03" stroke="#ffffff" stroke-opacity="0.08"/>
+  <rect x="288" y="332" width="968" height="40" rx="14" fill="#ffffff" fill-opacity="0.03"/>
+  <circle cx="316" cy="352" r="5" fill="#34D399"/>
+  <text x="332" y="357" fill="#8b95a7" font-size="11.5" font-family="ui-monospace, monospace">● Live</text>
+  <text x="1230" y="357" fill="#7a8699" font-size="11.5" text-anchor="end">🗑 Clear</text>
+  <!-- console body -->
+  <rect x="289" y="372" width="966" height="276" fill="#0b0e14"/>
+  <g font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="12.5">
+    <text x="306" y="396" fill="#58A6FF">[Aether] Starting server…</text>
+    <text x="306" y="416" fill="#C9D1D9">[12:04:18] [Server thread/INFO]: Starting minecraft server version 1.21.4</text>
+    <text x="306" y="436" fill="#C9D1D9">[12:04:19] [Server thread/INFO]: Loading properties</text>
+    <text x="306" y="456" fill="#C9D1D9">[12:04:21] [Server thread/INFO]: Preparing level "world"</text>
+    <text x="306" y="476" fill="#34D399">[12:04:24] [Server thread/INFO]: Done (5.812s)! For help, type "help"</text>
+    <text x="306" y="496" fill="#34D399">[12:06:02] [Server thread/INFO]: Steve joined the game</text>
+    <text x="306" y="516" fill="#8FE3F2">> say Welcome to the server!</text>
+    <text x="306" y="536" fill="#C9D1D9">[12:07:10] [Server thread/INFO]: [Server] Welcome to the server!</text>
+    <text x="306" y="556" fill="#FBBF24">[12:09:44] [Server thread/WARN]: Can't keep up! Running 2031ms behind</text>
+    <text x="306" y="576" fill="#34D399">[12:10:05] [Server thread/INFO]: Alex joined the game</text>
+  </g>
+  <!-- input row -->
+  <line x1="289" y1="612" x2="1255" y2="612" stroke="#ffffff" stroke-opacity="0.07"/>
+  <text x="306" y="634" fill="#22B8D8" font-family="ui-monospace, monospace" font-size="13">›</text>
+  <text x="322" y="634" fill="#7a8699" font-family="ui-monospace, monospace" font-size="12.5">Type a command and press Enter…</text>
+</svg>
