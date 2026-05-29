@@ -1,10 +1,11 @@
 # ── Aether daemon (Docker control plane) ─────────────────────────────────
 FROM node:20-bookworm-slim AS build
 WORKDIR /app
-# Copy the whole monorepo source (the root .dockerignore excludes node_modules,
-# .next, .env, .git) so all npm workspaces match the lockfile and devDeps
-# (typescript/tsc, etc.) install & hoist correctly.
-COPY . .
+# Only the workspaces this image needs (shared + daemon). No lockfile is committed,
+# so npm resolves just these workspaces' deps — fast, and devDeps (tsc) hoist fine.
+COPY package.json tsconfig.base.json ./
+COPY packages ./packages
+COPY apps/daemon ./apps/daemon
 RUN npm install --include=dev --no-audit --no-fund
 RUN npm run build:shared && npm run build --workspace @aether/daemon
 
