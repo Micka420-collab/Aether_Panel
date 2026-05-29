@@ -42,7 +42,8 @@ if [ ! -f .env ]; then
   say "Generating .env with fresh secrets…"
   PUBLIC_IP="${NODE_PUBLIC_IP:-$(curl -fsSL https://api.ipify.org 2>/dev/null || echo 127.0.0.1)}"
   DOMAIN="${APP_DOMAIN:-:80}"
-  APP_URL="http://${PUBLIC_IP}:3000"
+  # Caddy fronts the panel on :80 (the panel's own port 3000 isn't published).
+  APP_URL="http://${PUBLIC_IP}"
   [ "$DOMAIN" != ":80" ] && APP_URL="https://${DOMAIN}"
 
   cat > .env <<EOF
