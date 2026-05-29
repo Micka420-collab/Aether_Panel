@@ -18,12 +18,16 @@ export const minecraftJava: GameTemplate = {
   color: "#5BA744",
   category: "minecraft",
   dockerImages: {
-    "Java 21 (1.20.5+)": "itzg/minecraft-server:java21",
+    // The default. Ships the newest JDK so it always matches VERSION=LATEST
+    // (recent Minecraft, e.g. 26.1+, requires Java 25 — an older java21 image
+    // boots-fails with "requires running the server with Java 25 or above").
+    "Latest (newest MC · Java 25)": "itzg/minecraft-server:latest",
+    "Java 25 (MC 26.1+)": "itzg/minecraft-server:java25",
+    "Java 21 (1.20.5–1.21.x)": "itzg/minecraft-server:java21",
     "Java 17 (1.17–1.20.4)": "itzg/minecraft-server:java17",
     "Java 8 (1.7–1.16)": "itzg/minecraft-server:java8-multiarch",
-    Latest: "itzg/minecraft-server:latest",
   },
-  defaultImage: "itzg/minecraft-server:java21",
+  defaultImage: "itzg/minecraft-server:latest",
   // The itzg image has its own smart entrypoint; we drive it purely with env.
   startupCommand: "",
   stopCommand: "stop",
