@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { Search, Download, Check, X, Loader2, Package, Info } from "lucide-react";
+import { Search, Download, Check, X, Loader2, Package, Info, ExternalLink } from "lucide-react";
 import { api } from "@/lib/client";
 import { cn } from "@/lib/util";
 
@@ -13,6 +13,7 @@ interface Hit {
   downloads: number;
   author: string;
   projectType: string;
+  categories?: string[];
 }
 type ModType = "mod" | "plugin" | "modpack";
 type Source = "modrinth" | "curseforge";
@@ -171,6 +172,26 @@ export function ModsPanel({ id, canManage }: { id: string; canManage: boolean })
                   <span className="shrink-0 text-xs text-white/35">{fmt(h.downloads)} ↓</span>
                 </div>
                 <p className="mt-0.5 line-clamp-2 text-xs text-white/50">{h.description}</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  {source === "modrinth" && ctx?.loader && (
+                    <span className="rounded bg-online/10 px-1.5 py-0.5 text-[10px] font-medium text-online">
+                      {ctx.loader}{ctx.version ? ` ${ctx.version}` : ""} ✓
+                    </span>
+                  )}
+                  {(h.categories ?? []).filter((c) => c !== ctx?.loader).slice(0, 2).map((c) => (
+                    <span key={c} className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] capitalize text-white/40">{c}</span>
+                  ))}
+                  {source === "modrinth" && (
+                    <a
+                      href={`https://modrinth.com/${h.projectType}/${h.slug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-0.5 text-[10px] text-white/40 hover:text-cyan"
+                    >
+                      <ExternalLink className="h-3 w-3" /> info
+                    </a>
+                  )}
+                </div>
                 {canManage && (
                   <button
                     onClick={() => install(h)}

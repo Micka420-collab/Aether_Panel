@@ -146,14 +146,23 @@ class ServerManager extends EventEmitter {
   async power(serverId: string, action: PowerAction): Promise<void> {
     const rt = this.requireRuntime(serverId);
     switch (action) {
-      case "start":
+      case "start": {
         if (rt.state === ServerState.Running || rt.state === ServerState.Starting) return;
+        if (rt.state === ServerState.Installing)
+          throw new Error("Server is still installing — please wait for it to finish, then press Start.");
+        // If the container isn't there yet (e.g. Start was pressed while the
+        // image was still pulling on a previous attempt), build it now.
+        if (!(await inspect(serverId))) {
+          this.pushConsole(serverId, "[Aether] Building container…", "system");
+          await buildContainer(rt.spec);
+        }
         this.setState(serverId, ServerState.Starting);
         this.pushConsole(serverId, "[Aether] Starting server…", "system");
         await startContainer(serverId);
         rt.startedAt = Date.now();
         this.beginStreaming(serverId);
         break;
+      }
       case "restart":
         this.pushConsole(serverId, "[Aether] Restarting…", "system");
         await this.gracefulStop(serverId);

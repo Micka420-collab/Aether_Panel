@@ -5,7 +5,7 @@ import { json, noContent, route } from "@/lib/http";
 import { getServerContext, assertScope } from "@/lib/access";
 import { buildServerSpec } from "@/lib/spec";
 import { DaemonClient } from "@/lib/daemon";
-import { modContext } from "@/lib/modrinth";
+import { modContext, checkCompatibility, resolveGameVersion } from "@/lib/modrinth";
 import { isCurseforgeConfigured } from "@/lib/curseforge";
 import { audit } from "@/lib/audit";
 
@@ -61,9 +61,32 @@ export const POST = route(async (req, ctx: { params: { id: string } }) => {
   } else if (type === "modpack") {
     env.MODRINTH_MODPACK = slug;
   } else {
+    // Verify the project actually has an installable build for THIS server's
+    // loader + Minecraft version, so an incompatible plugin can never block the
+    // server from booting (the itzg image aborts on an unresolvable project).
+    const mc = modContext(env);
+    const gameVersion = await resolveGameVersion(env.VERSION);
+    let compat;
+    try {
+      compat = await checkCompatibility(slug, mc.loader, gameVersion);
+    } catch (e: any) {
+      throw new HttpError(422, e?.message ?? "Could not verify plugin compatibility");
+    }
+    if (!compat.compatible) {
+      const where = `${mc.loader ?? "this loader"}${gameVersion ? ` ${gameVersion}` : ""}`;
+      const hint = compat.onlyAlpha
+        ? ` Only an unstable alpha build exists for ${where}, so it wasn't installed.`
+        : compat.supportedGameVersions.length
+          ? ` It supports: ${compat.supportedGameVersions.slice(0, 10).join(", ")}.`
+          : "";
+      throw new HttpError(422, `"${slug}" has no compatible build for ${where}.${hint}`);
+    }
     const set = new Set(parseList(env.MODRINTH_PROJECTS));
     set.add(slug);
     env.MODRINTH_PROJECTS = [...set].join(",");
+    // Accept release + beta builds — right after a Minecraft release, plugins
+    // frequently only ship betas for the new version.
+    env.MODRINTH_ALLOWED_VERSION_TYPE = "beta";
   }
   await applyEnv(c.server.id, env);
   await audit("mod.install", { userId: user.id, serverId: c.server.id, metadata: { slug, type, source } });
