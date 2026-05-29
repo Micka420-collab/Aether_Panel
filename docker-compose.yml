@@ -90,8 +90,9 @@ services:
   # binds on loopback. Dynamic mode auto-discovers proxied servers from the daemon.
   edge-proxy:
     build:
-      context: .
-      dockerfile: apps/edge-proxy/Dockerfile
+      # self-contained Go module — context is its own dir (go.mod lives here)
+      context: apps/edge-proxy
+      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       - daemon
