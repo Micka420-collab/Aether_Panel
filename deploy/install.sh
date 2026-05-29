@@ -71,6 +71,22 @@ else
   ok ".env already exists — leaving it untouched"
 fi
 
+# ── 3b. Docker container DNS ────────────────────────────────────────────────
+# Some hosts hand containers a resolver that only answers on the host (e.g. a
+# router/systemd-resolved address), which makes image builds and `npm install`
+# hang on DNS. Add a public DNS fallback if Docker isn't already configured.
+if [ ! -f /etc/docker/daemon.json ]; then
+  say "Configuring Docker DNS fallback (1.1.1.1 / 8.8.8.8)…"
+  cat > /etc/docker/daemon.json <<'JSON'
+{
+  "dns": ["1.1.1.1", "8.8.8.8"]
+}
+JSON
+  systemctl restart docker 2>/dev/null || true
+  sleep 4
+  ok "Docker DNS configured"
+fi
+
 # ── 4. Build & launch ──────────────────────────────────────────────────────
 say "Building images (first run downloads & compiles — a few minutes)…"
 docker compose build
