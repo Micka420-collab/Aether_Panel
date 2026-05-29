@@ -1,4 +1,8 @@
-import { Server, utils } from "ssh2";
+// ssh2 is CommonJS — import the default export and destructure. Named ESM
+// imports ("import { Server } from 'ssh2'") fail at runtime in a "type":"module"
+// package: "Named export 'Server' not found".
+import ssh2 from "ssh2";
+const { Server, utils } = ssh2;
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
