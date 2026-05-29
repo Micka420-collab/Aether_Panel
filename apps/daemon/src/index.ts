@@ -5,6 +5,7 @@ import { logger } from "./logger.js";
 import { createHttpApp } from "./http.js";
 import { attachWebSocket } from "./ws.js";
 import { manager } from "./server-manager.js";
+import { ensureGameNetwork } from "./docker.js";
 import { watchDockerEvents } from "./events.js";
 import { startSftp } from "./sftp.js";
 
@@ -14,6 +15,10 @@ async function main() {
   await fs.mkdir(config.backupDir, { recursive: true });
 
   await manager.init();
+
+  // Attach the daemon to the dedicated game network up front so RCON works as
+  // soon as a server is (re)built (no-op on a host-mode daemon).
+  await ensureGameNetwork().catch((e) => logger.warn({ e }, "game network init failed"));
 
   const app = createHttpApp();
   const server = http.createServer(app);

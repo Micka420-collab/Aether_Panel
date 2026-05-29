@@ -3,11 +3,13 @@ import { config } from "./config.js";
 import { logger } from "./logger.js";
 
 /**
- * Thin RCON helper. RCON ports are bound to 127.0.0.1 only, so the daemon
- * (running on the host) can reach them while players cannot.
+ * Thin RCON helper. `host` is resolved by the caller via docker.rconHost():
+ * the game container's name when the daemon is containerized (reached over the
+ * dedicated game network), or 127.0.0.1 for a host-mode daemon. RCON is never
+ * published publicly, so players cannot reach it.
  */
-export async function sendRcon(port: number, password: string, command: string): Promise<string> {
-  const rcon = await Rcon.connect({ host: "127.0.0.1", port, password, timeout: 5000 });
+export async function sendRcon(host: string, port: number, password: string, command: string): Promise<string> {
+  const rcon = await Rcon.connect({ host, port, password, timeout: 5000 });
   try {
     return await rcon.send(command);
   } finally {
@@ -27,11 +29,12 @@ export function parsePlayerList(raw: string): { online: number; max: number; sam
 }
 
 export async function queryPlayers(
+  host: string,
   port: number,
   password: string,
 ): Promise<{ online: number; max: number; sample: string[] } | null> {
   try {
-    const raw = await sendRcon(port, password, "list");
+    const raw = await sendRcon(host, port, password, "list");
     return parsePlayerList(raw);
   } catch (e) {
     if (config.logLevel === "debug") logger.debug({ e }, "rcon player query failed");

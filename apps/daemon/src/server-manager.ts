@@ -18,6 +18,7 @@ import {
   killContainer,
   mapState,
   pullImage,
+  rconHost,
   removeContainer,
   startContainer,
   stopContainer,
@@ -196,7 +197,7 @@ class ServerManager extends EventEmitter {
     try {
       // RCON-capable games with a real console command (e.g. Minecraft "stop").
       if (rt.spec.rcon && stopCmd && !stopCmd.startsWith("^")) {
-        await sendRcon(rt.spec.rcon.port, rt.spec.rcon.password, stopCmd);
+        await sendRcon(await rconHost(serverId), rt.spec.rcon.port, rt.spec.rcon.password, stopCmd);
         await new Promise((r) => setTimeout(r, 1500));
       } else if (rt.stdin && stopCmd && !stopCmd.startsWith("^")) {
         // console-only games (e.g. Icarus): write the stop command to stdin
@@ -216,7 +217,7 @@ class ServerManager extends EventEmitter {
     if (rt.state !== ServerState.Running) throw new Error("server is not running");
     this.pushConsole(serverId, `> ${command}`, "system");
     if (rt.spec.rcon) {
-      const res = await sendRcon(rt.spec.rcon.port, rt.spec.rcon.password, command);
+      const res = await sendRcon(await rconHost(serverId), rt.spec.rcon.port, rt.spec.rcon.password, command);
       if (res?.trim()) this.pushConsole(serverId, res.trim(), "stdout");
       return;
     }
@@ -324,7 +325,7 @@ class ServerManager extends EventEmitter {
     if (rt.spec.rcon) {
       rt.playerTimer = setInterval(async () => {
         if (rt.state !== ServerState.Running) return;
-        const players = await queryPlayers(rt.spec.rcon!.port, rt.spec.rcon!.password);
+        const players = await queryPlayers(await rconHost(serverId), rt.spec.rcon!.port, rt.spec.rcon!.password);
         if (players) rt.players = players;
       }, 15000);
     }

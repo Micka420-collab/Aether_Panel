@@ -6,7 +6,7 @@ import crypto from "node:crypto";
 import path from "node:path";
 import type { BackupMeta, ServerBuildSpec } from "@aether/shared";
 import { config } from "./config.js";
-import { hostVolumePath } from "./docker.js";
+import { hostVolumePath, rconHost } from "./docker.js";
 import { sendRcon } from "./rcon.js";
 import { logger } from "./logger.js";
 
@@ -18,19 +18,20 @@ function backupFile(serverId: string, backupId: string): string {
 }
 
 /** Flush a Minecraft world to disk via RCON before archiving (prevents corruption). */
-async function flush(spec?: ServerBuildSpec) {
+async function flush(serverId: string, spec?: ServerBuildSpec) {
   if (!spec?.rcon) return;
   try {
-    await sendRcon(spec.rcon.port, spec.rcon.password, "save-off");
-    await sendRcon(spec.rcon.port, spec.rcon.password, "save-all flush");
+    const host = await rconHost(serverId);
+    await sendRcon(host, spec.rcon.port, spec.rcon.password, "save-off");
+    await sendRcon(host, spec.rcon.port, spec.rcon.password, "save-all flush");
   } catch (e) {
     logger.warn({ e }, "backup pre-flush failed (continuing)");
   }
 }
-async function unflush(spec?: ServerBuildSpec) {
+async function unflush(serverId: string, spec?: ServerBuildSpec) {
   if (!spec?.rcon) return;
   try {
-    await sendRcon(spec.rcon.port, spec.rcon.password, "save-on");
+    await sendRcon(await rconHost(serverId), spec.rcon.port, spec.rcon.password, "save-on");
   } catch {
     /* noop */
   }
@@ -46,7 +47,7 @@ export async function createBackup(
   const dest = backupFile(serverId, backupId);
   const src = hostVolumePath(serverId);
 
-  await flush(opts.spec);
+  await flush(serverId, opts.spec);
   try {
     const hash = crypto.createHash("sha256");
     await new Promise<void>((resolve, reject) => {
@@ -75,7 +76,7 @@ export async function createBackup(
       storage: "local",
     };
   } finally {
-    await unflush(opts.spec);
+    await unflush(serverId, opts.spec);
   }
 }
 

@@ -1,5 +1,6 @@
 import Docker from "dockerode";
 import { PassThrough } from "node:stream";
+import os from "node:os";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { ServerState, type ServerBuildSpec, type ServerStats } from "@aether/shared";
@@ -10,6 +11,56 @@ export const docker = new Docker({ socketPath: config.dockerSocket });
 
 export function containerName(serverId: string): string {
   return `${config.prefix}_${serverId}`;
+}
+
+// ── daemon ↔ game-container networking ──────────────────────────────────────
+// When the daemon runs inside a container (our Docker deployment), "127.0.0.1"
+// is the daemon's OWN loopback — not the host — so it cannot reach a game
+// server's RCON published on the host's 127.0.0.1. We instead put game
+// containers on a dedicated bridge network the daemon also joins, and reach
+// RCON by container name. The network is separate from the compose network, so
+// game containers stay isolated from postgres/panel.
+const GAME_NETWORK = "aether-games";
+
+let containerizedP: Promise<boolean> | null = null;
+/** True when the daemon itself runs inside a container (vs. directly on the host). */
+export function isContainerized(): Promise<boolean> {
+  return (containerizedP ??= (async () => {
+    try {
+      await docker.getContainer(os.hostname()).inspect();
+      return true;
+    } catch {
+      return false;
+    }
+  })());
+}
+
+let gameNetP: Promise<string | null> | null = null;
+/**
+ * Ensure the dedicated game network exists and the daemon is attached to it.
+ * Returns the network name to put game containers on, or null on a host-mode
+ * daemon (where 127.0.0.1 + host-published ports already work).
+ */
+export function ensureGameNetwork(): Promise<string | null> {
+  return (gameNetP ??= (async () => {
+    if (!(await isContainerized())) return null;
+    try {
+      await docker.createNetwork({ Name: GAME_NETWORK, Driver: "bridge", CheckDuplicate: true });
+    } catch {
+      /* already exists */
+    }
+    try {
+      await docker.getNetwork(GAME_NETWORK).connect({ Container: os.hostname() });
+    } catch {
+      /* daemon already attached */
+    }
+    return GAME_NETWORK;
+  })());
+}
+
+/** Host the daemon should dial to reach a game container's RCON. */
+export async function rconHost(serverId: string): Promise<string> {
+  return (await isContainerized()) ? containerName(serverId) : "127.0.0.1";
 }
 
 export function hostVolumePath(serverId: string): string {
@@ -123,6 +174,9 @@ export async function buildContainer(spec: ServerBuildSpec): Promise<void> {
 
   const { exposed, bindings } = buildPortBindings(spec);
   const { Memory, MemorySwap } = memoryConfig(spec);
+  // Put the container on the daemon's game network so the daemon can reach its
+  // RCON by name (null on a host-mode daemon — then 127.0.0.1 + host ports work).
+  const gameNet = await ensureGameNetwork();
 
   const env = Object.entries(spec.environment).map(([k, v]) => `${k}=${v}`);
 
@@ -145,6 +199,9 @@ export async function buildContainer(spec: ServerBuildSpec): Promise<void> {
     StopSignal: spec.stopSignal || "SIGTERM",
     StopTimeout: 90,
     HostConfig: {
+      // Reachable by container name from the daemon (for RCON), and isolated from
+      // the control plane — postgres/panel live on a separate compose network.
+      ...(gameNet ? { NetworkMode: gameNet } : {}),
       Binds: [`${volume}:${spec.containerDataPath}`],
       PortBindings: bindings,
       Memory,
