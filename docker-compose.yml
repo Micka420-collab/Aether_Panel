@@ -1,0 +1,131 @@
+# Aether — single-host deployment.
+#   docker compose up -d
+# Set the values in .env first (see .env.example). Most importantly:
+#   APP_URL, DEFAULT_NODE_FQDN (your public host), NODE_PUBLIC_IP, and the secrets.
+
+name: aether
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aether}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aether}
+      POSTGRES_DB: ${POSTGRES_DB:-aether}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aether}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  panel:
+    build:
+      context: .
+      dockerfile: apps/panel/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-aether}:${POSTGRES_PASSWORD:-aether}@postgres:5432/${POSTGRES_DB:-aether}?schema=public
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env}
+      API_JWT_SECRET: ${API_JWT_SECRET:?set API_JWT_SECRET in .env}
+      DAEMON_TOKEN: ${DAEMON_TOKEN:?set DAEMON_TOKEN in .env}
+      # The node fqdn the browser AND panel use to reach the daemon.
+      DEFAULT_NODE_FQDN: ${DEFAULT_NODE_FQDN:-localhost}
+      NODE_PUBLIC_IP: ${NODE_PUBLIC_IP:-127.0.0.1}
+      DAEMON_PORT: ${DAEMON_PORT:-8080}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      # Free subdomains (optional)
+      DOMAIN_BASE: ${DOMAIN_BASE:-}
+      DNS_PROVIDER: ${DNS_PROVIDER:-none}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+      CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID:-}
+      CURSEFORGE_API_KEY: ${CURSEFORGE_API_KEY:-}
+      ALERT_WEBHOOK: ${ALERT_WEBHOOK:-}
+    expose:
+      - "3000"
+    ports:
+      - "3000:3000"
+
+  daemon:
+    build:
+      context: .
+      dockerfile: apps/daemon/Dockerfile
+    restart: unless-stopped
+    environment:
+      DAEMON_PORT: "8080"
+      DAEMON_TOKEN: ${DAEMON_TOKEN:?set DAEMON_TOKEN in .env}
+      DAEMON_DATA_DIR: /var/lib/aether/volumes
+      DAEMON_BACKUP_DIR: /var/lib/aether/backups
+      DOCKER_SOCKET: /var/run/docker.sock
+      NODE_PUBLIC_IP: ${NODE_PUBLIC_IP:-127.0.0.1}
+      # SFTP: validate logins against the panel and listen on 2022
+      PANEL_URL: http://panel:3000
+      SFTP_PORT: "2022"
+      SFTP_HOST_KEY: /var/lib/aether/ssh_host_key
+    volumes:
+      # Control the host Docker engine (the daemon spawns game containers on the host).
+      - /var/run/docker.sock:/var/run/docker.sock
+      # CRITICAL: same path inside the daemon and on the host, so the bind-mounts the
+      # daemon passes to game containers resolve correctly on the host engine.
+      - /var/lib/aether/volumes:/var/lib/aether/volumes
+      - /var/lib/aether/backups:/var/lib/aether/backups
+    ports:
+      # Browsers connect here for the live console/stats WebSocket.
+      # In production, front this with Caddy + TLS on a node.<domain> subdomain.
+      - "8080:8080"
+      # SFTP for the file manager (connect with <username>.<serverId> + your password)
+      - "2022:2022"
+
+  # Wake-on-join proxy. Uses host networking so it can own public game ports and
+  # reach both the daemon (127.0.0.1:8080) and the internal game ports the daemon
+  # binds on loopback. Dynamic mode auto-discovers proxied servers from the daemon.
+  edge-proxy:
+    build:
+      context: .
+      dockerfile: apps/edge-proxy/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - daemon
+    network_mode: host
+    environment:
+      AETHER_DYNAMIC: "1"
+      DAEMON_URL: http://127.0.0.1:8080
+      DAEMON_TOKEN: ${DAEMON_TOKEN:?set DAEMON_TOKEN in .env}
+      # Anti-DDoS guard (per-IP) — tune in .env if needed
+      DDOS_MAX_CONN_PER_IP: ${DDOS_MAX_CONN_PER_IP:-8}
+      DDOS_CONN_PER_MIN: ${DDOS_CONN_PER_MIN:-40}
+      DDOS_PING_PER_MIN: ${DDOS_PING_PER_MIN:-60}
+      DDOS_BAN_STRIKES: ${DDOS_BAN_STRIKES:-10}
+      DDOS_BAN_SECONDS: ${DDOS_BAN_SECONDS:-600}
+      DDOS_HANDSHAKE_MS: ${DDOS_HANDSHAKE_MS:-4000}
+      DDOS_BLOCKLIST: ${DDOS_BLOCKLIST:-}
+      PROXY_PROTOCOL: ${PROXY_PROTOCOL:-0}
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - panel
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-:80}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

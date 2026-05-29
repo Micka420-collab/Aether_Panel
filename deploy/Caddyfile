@@ -1,0 +1,26 @@
+# Aether reverse proxy.
+# APP_DOMAIN defaults to :80 (no TLS). Set APP_DOMAIN=panel.example.com for
+# automatic HTTPS via Let's Encrypt.
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	# Security headers
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Panel (Next.js). WebSocket upgrades are passed through automatically.
+	reverse_proxy panel:3000
+}
+
+# OPTIONAL — front the daemon WebSocket with TLS on a subdomain.
+# Then set the node's scheme=https and daemonPort=443 in the panel.
+#
+# node.example.com {
+# 	reverse_proxy daemon:8080
+# }

@@ -1,0 +1,33 @@
+import { db } from "@/lib/db";
+import { json, route } from "@/lib/http";
+import { authApi } from "@/lib/api-auth";
+
+export const dynamic = "force-dynamic";
+import { getTemplate, buildAddress } from "@aether/shared";
+
+/** List every server the authenticated user can access (owner or sub-user). */
+export const GET = route(async (req) => {
+  const { user } = await authApi(req);
+  const servers = await db.server.findMany({
+    where: { OR: [{ ownerId: user.id }, { subusers: { some: { userId: user.id } } }] },
+    include: { allocations: true, node: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return json({
+    servers: servers.map((s) => {
+      const tpl = getTemplate(s.templateId);
+      const primary = s.allocations.find((a) => a.primary) ?? s.allocations[0];
+      const defaultPort = tpl?.ports.find((p) => p.primary)?.default ?? primary?.port ?? 0;
+      return {
+        id: s.id,
+        name: s.name,
+        game: s.game,
+        node: s.node.name,
+        state: s.state,
+        address: primary ? buildAddress(primary.ip, primary.port, defaultPort) : null,
+        owner: s.ownerId === user.id,
+      };
+    }),
+  });
+});

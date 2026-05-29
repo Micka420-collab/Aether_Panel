@@ -1,0 +1,13 @@
+{
+  "name": "aether-launcher-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reference client showing how a custom Minecraft launcher integrates with the Aether API.",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

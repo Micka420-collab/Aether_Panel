@@ -1,0 +1,72 @@
+/** Default pricing tiers. Seeded into the DB and used as a fallback on the marketing site. */
+export const DEFAULT_PLANS = [
+  {
+    slug: "spark",
+    name: "Spark",
+    priceMonthly: 399,
+    priceAnnual: 3830,
+    memoryMb: 2048,
+    cpuPercent: 150,
+    diskMb: 15360,
+    backupSlots: 3,
+    databases: 1,
+    popular: false,
+    sort: 0,
+    features: [
+      "2 GB DDR5 RAM",
+      "150% Ryzen CPU",
+      "15 GB NVMe storage",
+      "Up to ~10 players",
+      "1-click Minecraft & mods",
+      "Sleeps when empty (wake-on-join)",
+    ],
+  },
+  {
+    slug: "nebula",
+    name: "Nebula",
+    priceMonthly: 899,
+    priceAnnual: 8630,
+    memoryMb: 6144,
+    cpuPercent: 300,
+    diskMb: 51200,
+    backupSlots: 10,
+    databases: 3,
+    popular: true,
+    sort: 1,
+    features: [
+      "6 GB DDR5 RAM",
+      "300% Ryzen CPU",
+      "50 GB NVMe storage",
+      "Up to ~40 players",
+      "Modpacks, Icarus & more",
+      "Daily automated backups",
+      "Free subdomain + DDoS protection",
+    ],
+  },
+  {
+    slug: "quasar",
+    name: "Quasar",
+    priceMonthly: 1899,
+    priceAnnual: 18230,
+    memoryMb: 12288,
+    cpuPercent: 600,
+    diskMb: 153600,
+    backupSlots: 30,
+    databases: 10,
+    popular: false,
+    sort: 2,
+    features: [
+      "12 GB DDR5 RAM",
+      "600% Ryzen CPU",
+      "150 GB NVMe storage",
+      "Big communities & heavy modpacks",
+      "Priority node placement",
+      "Hourly backups + S3 offsite",
+      "Priority support (<15 min)",
+    ],
+  },
+] as const;
+
+export function formatPrice(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}

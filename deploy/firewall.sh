@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────
+#  Aether — host firewall (nftables) for DDoS mitigation on Ubuntu.
+#
+#    sudo bash deploy/firewall.sh apply     # normal protection
+#    sudo bash deploy/firewall.sh attack    # tightened limits (under attack)
+#    sudo bash deploy/firewall.sh flush      # remove Aether rules
+#
+#  Layers it adds (L3/L4):
+#    • drop conntrack-INVALID packets
+#    • accept established/related (stateful)
+#    • per-source SYN-flood rate limiting on new TCP
+#    • per-source UDP rate limiting (anti-amplification / UDP floods)
+#    • ICMP echo rate limiting
+#    • SSH brute-force rate limiting on new connections
+#  Tune the ports/rates with the env vars below.
+# ─────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+if [ "$(id -u)" -ne 0 ]; then echo "Run as root (sudo)."; exit 1; fi
+if ! command -v nft >/dev/null 2>&1; then
+  echo "Installing nftables…"; apt-get update -y && apt-get install -y nftables
+fi
+
+CMD="${1:-apply}"
+
+# Ports to keep open (rate-limited where it makes sense)
+SSH_PORT="${SSH_PORT:-22}"
+PANEL_PORTS="${PANEL_PORTS:-80, 443}"
+DAEMON_PORT="${DAEMON_PORT:-8080}"
+SFTP_PORT="${SFTP_PORT:-2022}"
+
+# Per-source new-connection / packet rates (normal vs attack mode)
+if [ "$CMD" = "attack" ]; then
+  TCP_RATE="${TCP_RATE:-15/second}"; TCP_BURST="${TCP_BURST:-30}"
+  UDP_RATE="${UDP_RATE:-25/second}"; UDP_BURST="${UDP_BURST:-50}"
+  echo "⚔  Applying ATTACK-MODE firewall (tightened limits)…"
+else
+  TCP_RATE="${TCP_RATE:-60/second}"; TCP_BURST="${TCP_BURST:-100}"
+  UDP_RATE="${UDP_RATE:-90/second}"; UDP_BURST="${UDP_BURST:-150}"
+fi
+
+if [ "$CMD" = "flush" ]; then
+  nft delete table inet aether 2>/dev/null || true
+  echo "✓ Aether firewall rules removed."
+  exit 0
+fi
+
+nft -f - <<EOF
+table inet aether {
+  chain input {
+    type filter hook input priority 0; policy drop;
+
+    # stateful baseline
+    ct state established,related accept
+    ct state invalid drop
+    iif "lo" accept
+
+    # ICMP (allow but rate-limit echo to blunt ping floods)
+    ip protocol icmp icmp type echo-request limit rate 5/second accept
+    ip protocol icmp icmp type { destination-unreachable, time-exceeded, parameter-problem } accept
+    ip6 nexthdr icmpv6 icmpv6 type { nd-neighbor-solicit, nd-neighbor-advert, nd-router-advert, echo-request } limit rate 10/second accept
+
+    # SSH — rate-limit new connections per source (brute-force/flood guard)
+    tcp dport $SSH_PORT ct state new meter ssh4 { ip saddr limit rate over 6/minute burst 5 packets } drop
+    tcp dport $SSH_PORT accept
+
+    # Panel / daemon / SFTP control surfaces
+    tcp dport { $PANEL_PORTS } accept
+    tcp dport $DAEMON_PORT accept
+    tcp dport $SFTP_PORT accept
+
+    # Game TCP (everything else >= 1024): per-source SYN-flood rate limit
+    tcp flags & (fin|syn|rst|ack) == syn tcp dport >= 1024 \
+        meter syn4 { ip saddr limit rate over $TCP_RATE burst $TCP_BURST packets } drop
+    tcp dport >= 1024 ct state new accept
+
+    # Game UDP: per-source rate limit (anti-amplification / UDP flood)
+    udp dport >= 1024 meter udp4 { ip saddr limit rate over $UDP_RATE burst $UDP_BURST packets } drop
+    udp dport >= 1024 accept
+
+    # everything else falls through to the drop policy
+  }
+}
+EOF
+
+echo "✓ Aether firewall applied (mode: $CMD)."
+echo "  TCP new-conn limit: $TCP_RATE (burst $TCP_BURST) · UDP: $UDP_RATE (burst $UDP_BURST)"
+echo "  Open: SSH $SSH_PORT, panel $PANEL_PORTS, daemon $DAEMON_PORT, sftp $SFTP_PORT, games >=1024 (rate-limited)"
+echo "  Make persistent:  nft list table inet aether > /etc/nftables.conf  (and enable nftables.service)"

@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  node:
+    name: Build, typecheck & test (Node)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install --no-audit --no-fund
+      - name: Build shared + generate Prisma client
+        run: |
+          npm run build:shared
+          npm run db:generate
+      - name: Typecheck panel & daemon
+        run: |
+          npx tsc --noEmit -p apps/panel/tsconfig.json
+          npx tsc --noEmit -p apps/daemon/tsconfig.json
+      - name: Unit tests
+        run: npm test
+      - name: Production build (panel + daemon)
+        run: |
+          npm run build --workspace @aether/panel
+          npm run build --workspace @aether/daemon
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+
+  go:
+    name: Build edge proxy (Go)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - run: go build ./...
+        working-directory: apps/edge-proxy

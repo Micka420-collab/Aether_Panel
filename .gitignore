@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Data / runtime
+data/
+volumes/
+backups/
+/var/
+
+# Prisma
+apps/panel/prisma/*.db
+
+# Go build artifacts
+*.exe
+apps/edge-proxy/aether-edge-proxy
+apps/edge-proxy/edge-proxy
+apps/edge-proxy/config.json
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.sixth/
+
+# Secrets
+*.pem
+daemon.token
+node-config.json

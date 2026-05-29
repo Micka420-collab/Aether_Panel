@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/.next
+**/.git
+**/*.log
+**/.env
+**/.env.local
+data
+volumes
+backups

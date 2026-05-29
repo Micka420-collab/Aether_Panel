@@ -1,0 +1,12 @@
+{
+  "daemonUrl": "http://localhost:8080",
+  "daemonToken": "change-me-shared-secret-between-panel-and-daemon",
+  "routes": [
+    {
+      "listen": ":25565",
+      "backend": "127.0.0.1:25600",
+      "serverId": "your-server-id",
+      "idleSeconds": 600
+    }
+  ]
+}

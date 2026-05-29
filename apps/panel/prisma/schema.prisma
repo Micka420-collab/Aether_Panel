@@ -1,0 +1,371 @@
+// Aether — data model for the multi-game hosting platform.
+// Control plane (panel) stores ALL metadata here; the daemon owns live execution.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum Protocol {
+  TCP
+  UDP
+  BOTH
+}
+
+enum TaskAction {
+  COMMAND
+  POWER
+  BACKUP
+}
+
+enum BackupStorage {
+  LOCAL
+  S3
+}
+
+// ─────────────────────────── Identity ───────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  role         UserRole @default(USER)
+  avatarUrl    String?
+
+  // 2FA (TOTP)
+  totpEnabled   Boolean @default(false)
+  totpSecret    String? // encrypted at rest
+  recoveryCodes String? // JSON array of hashed single-use codes
+
+  // billing (optional credit wallet)
+  credits Int @default(0)
+
+  servers     Server[]    @relation("OwnedServers")
+  subusers    Subuser[]
+  apiKeys     ApiKey[]
+  sessions    Session[]
+  oauth       OAuthAccount[]
+  auditLogs    AuditLog[]
+  deviceAuths  DeviceAuth[]
+  wakeLinks    WakeLink[]
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String   @unique
+  mfaCompleted Boolean  @default(false)
+  userAgent    String?
+  ip           String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+model OAuthAccount {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String // "discord" | "steam" | "microsoft"
+  providerAccountId String
+  // for Microsoft (launcher): the MC profile linked to this account
+  mcUuid            String?
+  mcUsername        String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// ─────────────────────────── Infrastructure ───────────────────────────
+
+model Node {
+  id          String  @id @default(cuid())
+  name        String
+  fqdn        String // hostname the panel reaches the daemon at
+  scheme      String  @default("http") // http | https
+  daemonPort  Int     @default(8080)
+  publicIp    String // IP advertised to players
+  tokenId     String  @unique // public node identifier
+  tokenSecret String // shared bearer/HMAC secret (encrypt at rest in prod)
+
+  // capacity (for scheduling / overcommit display)
+  memoryMb   Int     @default(16384)
+  diskMb     Int     @default(204800)
+  cpuPercent Int     @default(800)
+  maintenance Boolean @default(false)
+
+  servers     Server[]
+  allocations Allocation[]
+  alerts      Alert[]
+
+  createdAt DateTime @default(now())
+}
+
+// Operational alerts raised by the monitor (node down, server crashed, …).
+model Alert {
+  id        String   @id @default(cuid())
+  key       String   @unique // dedupe key, e.g. "node.down:<id>" or "server.errored:<id>"
+  level     String   @default("warning") // info | warning | critical
+  message   String
+  serverId  String?
+  server    Server?  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  nodeId    String?
+  node      Node?    @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resolved])
+}
+
+model Allocation {
+  id       String   @id @default(cuid())
+  nodeId   String
+  node     Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  ip       String
+  port     Int
+  protocol Protocol @default(BOTH)
+  role     String   @default("Game") // "Game" | "RCON" | "Query" | ...
+  notes    String?
+
+  serverId String?
+  server   Server? @relation("ServerAllocations", fields: [serverId], references: [id], onDelete: SetNull)
+  primary  Boolean @default(false)
+
+  @@unique([nodeId, ip, port, protocol])
+  @@index([serverId])
+}
+
+// ─────────────────────────── Servers ───────────────────────────
+
+model Server {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  ownerId String
+  owner   User   @relation("OwnedServers", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  nodeId String
+  node   Node   @relation(fields: [nodeId], references: [id])
+
+  // references a template in @aether/shared (code registry) or a custom egg id
+  templateId  String
+  game        String
+  dockerImage String
+
+  // resolved user variable values (JSON: { KEY: value })
+  environment Json @default("{}")
+
+  // resource limits
+  memoryMb   Int @default(4096)
+  cpuPercent Int @default(200)
+  diskMb     Int @default(10240)
+  swapMb     Int @default(0)
+
+  // state cache (authoritative live state comes from the daemon)
+  state     String  @default("offline")
+  suspended Boolean @default(false)
+  installed Boolean @default(false)
+
+  // billing: when running time was last metered against the owner's credits
+  lastBilledAt DateTime?
+
+  // sleeping / wake-on-join
+  autoStop      Boolean @default(true)
+  idleTimeout   Int     @default(600) // seconds empty before sleep
+  autoRestart   Boolean @default(false) // monitor restarts the server if it crashes
+  subdomain     String? @unique // e.g. "myserver" -> myserver.aether.host
+
+  allocations  Allocation[] @relation("ServerAllocations")
+  backups      Backup[]
+  schedules    Schedule[]
+  subusers     Subuser[]
+  wakeLinks    WakeLink[]
+  auditLogs    AuditLog[]
+  transactions Transaction[]
+  alerts       Alert[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([nodeId])
+}
+
+// Credit wallet ledger: positive = top-up/grant, negative = usage.
+model Transaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serverId  String?
+  server    Server?  @relation(fields: [serverId], references: [id], onDelete: SetNull)
+  amount    Int // credits, signed
+  balance   Int // resulting balance after this entry
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Subuser {
+  id       String @id @default(cuid())
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scopes   Json   @default("[]") // string[] of @aether/shared Scope values
+
+  createdAt DateTime @default(now())
+
+  @@unique([serverId, userId])
+  @@index([userId])
+}
+
+model Backup {
+  id        String        @id @default(cuid())
+  serverId  String
+  server    Server        @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  name      String
+  sizeBytes BigInt        @default(0)
+  checksum  String?
+  locked    Boolean       @default(false)
+  completed Boolean       @default(false)
+  storage   BackupStorage @default(LOCAL)
+
+  createdAt DateTime @default(now())
+
+  @@index([serverId])
+}
+
+model Schedule {
+  id        String  @id @default(cuid())
+  serverId  String
+  server    Server  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  name      String
+  cron      String // "m h dom mon dow"
+  timezone  String  @default("UTC")
+  active    Boolean @default(true)
+  lastRunAt DateTime?
+  nextRunAt DateTime?
+
+  tasks Task[]
+
+  createdAt DateTime @default(now())
+
+  @@index([serverId])
+}
+
+model Task {
+  id                String     @id @default(cuid())
+  scheduleId        String
+  schedule          Schedule   @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  action            TaskAction
+  payload           String     @default("") // command text, power signal, or backup name
+  offsetSeconds     Int        @default(0) // delay after the previous task in the sequence
+  sequence          Int        @default(0)
+  continueOnFailure Boolean    @default(true)
+
+  @@index([scheduleId])
+}
+
+// ─────────────────────────── API & Launcher ───────────────────────────
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  prefix      String   @unique // e.g. "aeth_AbC123"
+  keyHash     String // hash of the full secret
+  scopes      Json     @default("[]")
+  ipAllowlist Json     @default("[]")
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Microsoft-style device-code flow so a desktop launcher can authenticate.
+model DeviceAuth {
+  id         String   @id @default(cuid())
+  deviceCode String   @unique
+  userCode   String   @unique
+  approved   Boolean  @default(false)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  interval   Int      @default(5)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+// No-login shareable wake link (start-only).
+model WakeLink {
+  id          String    @id @default(cuid())
+  serverId    String
+  server      Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  token       String    @unique
+  createdById String
+  createdBy   User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  uses        Int       @default(0)
+  maxUses     Int?
+  expiresAt   DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([serverId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  serverId  String?
+  server    Server?  @relation(fields: [serverId], references: [id], onDelete: SetNull)
+  action    String
+  metadata  Json     @default("{}")
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([serverId])
+}
+
+// Pricing / plans surfaced on the marketing site and used for resource presets.
+model Plan {
+  id           String  @id @default(cuid())
+  slug         String  @unique
+  name         String
+  priceMonthly Int // in cents
+  priceAnnual  Int // in cents
+  memoryMb     Int
+  cpuPercent   Int
+  diskMb       Int
+  backupSlots  Int     @default(3)
+  databases    Int     @default(1)
+  popular      Boolean @default(false)
+  features     Json    @default("[]")
+  sort         Int     @default(0)
+
+  createdAt DateTime @default(now())
+}

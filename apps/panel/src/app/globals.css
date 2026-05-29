@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  border-color: theme("colors.line");
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #07090f;
+  color: #d7dee8;
+  font-feature-settings: "cv11", "ss01";
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(0, 180, 216, 0.28);
+  color: #fff;
+}
+
+@layer base {
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer components {
+  /* Glassmorphism surface — refined: hairline border + a faint top highlight
+     for a polished, "lit-from-above" edge. */
+  .glass {
+    @apply relative rounded-2xl border border-white/[0.07] bg-white/[0.03] backdrop-blur-xl;
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+      0 16px 40px -24px rgba(0, 0, 0, 0.8);
+  }
+  .glass-raised {
+    @apply relative rounded-2xl border border-white/[0.09] bg-white/[0.05] backdrop-blur-xl;
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+      0 24px 60px -28px rgba(0, 0, 0, 0.85);
+  }
+  @supports not (backdrop-filter: blur(12px)) {
+    .glass,
+    .glass-raised {
+      @apply bg-surface/95;
+    }
+  }
+
+  /* Hairline divider */
+  .hr {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium tracking-tight transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-base disabled:cursor-not-allowed disabled:opacity-45;
+  }
+  /* Primary — refined gradient with a hairline highlight, restrained glow. */
+  .btn-primary {
+    @apply btn text-white;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 40%), linear-gradient(135deg, #00b4d8, #6d5cff);
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.25) inset,
+      0 10px 26px -12px rgba(63, 132, 255, 0.55);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.07);
+  }
+  .btn-primary:active {
+    transform: scale(0.985);
+  }
+  .btn-ghost {
+    @apply btn border border-white/10 bg-white/[0.04] text-white/85 hover:border-white/20 hover:bg-white/[0.08] hover:text-white;
+  }
+  .btn-danger {
+    @apply btn border border-danger/30 bg-danger/10 text-danger hover:border-danger/50 hover:bg-danger/20;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-white/10 bg-black/25 px-3.5 py-2.5 text-sm text-white placeholder-white/25 outline-none transition focus:border-cyan/50 focus:bg-black/40 focus:ring-2 focus:ring-cyan/15;
+  }
+  .label {
+    @apply mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-white/45;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-white/65;
+  }
+
+  /* Section kicker — refined, low-saturation. */
+  .kicker {
+    @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-light;
+  }
+
+  .gradient-text {
+    background-image: linear-gradient(135deg, #90e0ef, #b9a7ff);
+    @apply bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  /* Ambient blurred orbs behind content. */
+  .orb {
+    @apply pointer-events-none absolute rounded-full will-change-transform;
+    filter: blur(140px);
+  }
+}
+
+/* Refined thin scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+  background-clip: content-box;
+}
+
+/* Console surface */
+.console-surface {
+  background: #0b0e14;
+  color: #c9d1d9;
+}
