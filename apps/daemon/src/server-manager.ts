@@ -391,9 +391,11 @@ class ServerManager extends EventEmitter {
     const rt = this.servers.get(serverId);
     if (!rt) return;
     if (action === "die" || action === "stop") {
-      // Clean stop only when WE asked for it; otherwise it's a crash.
+      // Clean stop only when WE asked for it; otherwise it's a crash. Docker emits
+      // BOTH `die` and `stop` for one shutdown — do NOT clear the intent flag here,
+      // or the second event would be misread as a crash and flip Offline → Errored.
+      // The flag is cleared only when a fresh start begins.
       this.setState(serverId, rt.stopping ? ServerState.Offline : ServerState.Errored);
-      rt.stopping = false;
       this.endStreaming(serverId);
     } else if (action === "start") {
       rt.stopping = false;
