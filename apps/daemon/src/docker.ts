@@ -90,6 +90,28 @@ export async function rconHost(serverId: string): Promise<string> {
   return (await ensureGameNetwork()) ? containerName(serverId) : "127.0.0.1";
 }
 
+/** Physical RAM of the host, in MB. */
+export function hostMemoryMb(): number {
+  return Math.round(os.totalmem() / (1024 * 1024));
+}
+
+/** Sum of the memory limits of currently-RUNNING Aether game containers (MB). */
+export async function runningManagedMemoryMb(): Promise<number> {
+  try {
+    const list = await docker.listContainers({
+      filters: { label: ["aether.managed=true"], status: ["running"] },
+    } as Docker.ContainerListOptions);
+    let bytes = 0;
+    for (const c of list) {
+      const info = await docker.getContainer(c.Id).inspect().catch(() => null);
+      bytes += info?.HostConfig?.Memory ?? 0;
+    }
+    return Math.round(bytes / (1024 * 1024));
+  } catch {
+    return 0;
+  }
+}
+
 export function hostVolumePath(serverId: string): string {
   return path.join(config.dataDir, serverId);
 }

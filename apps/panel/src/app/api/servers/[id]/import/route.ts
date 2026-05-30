@@ -1,6 +1,6 @@
 import { requireUser, HttpError } from "@/lib/auth";
 import { json, route } from "@/lib/http";
-import { getServerContext, assertScope } from "@/lib/access";
+import { getServerContext, assertScope, assertNotSuspended } from "@/lib/access";
 import { DaemonClient } from "@/lib/daemon";
 
 // Streaming archive upload — keep on the Node runtime and allow a long upload.
@@ -16,6 +16,7 @@ export const POST = route(async (req: Request, ctx: { params: { id: string } }) 
   const user = await requireUser();
   const c = await getServerContext(user, ctx.params.id);
   assertScope(c, "file.write");
+  assertNotSuspended(c);
 
   const url = new URL(req.url);
   const name = url.searchParams.get("name") ?? "archive.zip";

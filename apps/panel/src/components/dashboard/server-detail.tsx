@@ -32,6 +32,11 @@ export function ServerDetail({ id }: { id: string }) {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+  // Re-fetch when the live state settles so address/scopes/allocations stay fresh.
+  useEffect(() => {
+    if (socket.state === "running" || socket.state === "offline" || socket.state === "errored") load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket.state]);
 
   if (!detail) {
     return (
@@ -47,6 +52,7 @@ export function ServerDetail({ id }: { id: string }) {
   const scopes: string[] = detail.scopes ?? [];
   const can = (scope: string) => scopes.includes(scope) || scopes.includes("*");
   const running = state === "running";
+  const transitioning = state === "installing" || state === "starting" || state === "stopping";
 
   async function power(action: string) {
     setBusy(action);
@@ -56,6 +62,7 @@ export function ServerDetail({ id }: { id: string }) {
       alert(e.message);
     } finally {
       setBusy(null);
+      load(); // refresh server fields after the action
     }
   }
 
@@ -113,16 +120,16 @@ export function ServerDetail({ id }: { id: string }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => power("start")} disabled={!can("control.start") || running || !!busy} className="btn-ghost text-online disabled:opacity-40">
+            <button onClick={() => power("start")} disabled={!can("control.start") || running || transitioning || !!busy} className="btn-ghost text-online disabled:opacity-40">
               {busy === "start" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />} Start
             </button>
-            <button onClick={() => power("restart")} disabled={!can("control.stop") || !!busy} className="btn-ghost">
+            <button onClick={() => power("restart")} disabled={!can("control.stop") || transitioning || !!busy} className="btn-ghost disabled:opacity-40">
               {busy === "restart" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCw className="h-4 w-4" />} Restart
             </button>
             <button onClick={() => power("stop")} disabled={!can("control.stop") || !running || !!busy} className="btn-ghost text-warn disabled:opacity-40">
               {busy === "stop" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />} Stop
             </button>
-            <button onClick={() => power("kill")} disabled={!can("control.stop") || !!busy} className="btn-danger" title="Force kill">
+            <button onClick={() => power("kill")} disabled={!can("control.stop") || state === "installing" || !!busy} className="btn-danger disabled:opacity-40" title="Force kill">
               <Zap className="h-4 w-4" />
             </button>
           </div>

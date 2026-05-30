@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { requireUser, HttpError } from "@/lib/auth";
 import { json, route } from "@/lib/http";
 import { getServerContext, assertScope } from "@/lib/access";
 import { DaemonClient } from "@/lib/daemon";
@@ -13,6 +13,10 @@ export const POST = route(async (req, ctx: { params: { id: string } }) => {
   const c = await getServerContext(user, ctx.params.id);
   const { action } = schema.parse(await req.json());
   assertScope(c, action === "start" ? "control.start" : "control.stop");
+  // A suspended server may be stopped/killed but not (re)started.
+  if ((action === "start" || action === "restart") && c.server.suspended) {
+    throw new HttpError(403, "This server is suspended — starting it is disabled.");
+  }
 
   await new DaemonClient(c.node).power(c.server.id, action);
 

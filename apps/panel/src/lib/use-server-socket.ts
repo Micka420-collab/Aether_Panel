@@ -5,11 +5,14 @@ import { api } from "./client";
 
 const MAX_LINES = 600;
 
+/** A console line with a stable, monotonic id for React keys (the buffer slides). */
+export type KeyedLine = ConsoleLine & { _id: number };
+
 export interface ServerSocket {
   connected: boolean;
   state: ServerState | null;
   stats: ServerStats | null;
-  lines: ConsoleLine[];
+  lines: KeyedLine[];
   sendCommand: (cmd: string) => void;
   sendPower: (action: PowerAction) => void;
   clear: () => void;
@@ -24,14 +27,16 @@ export function useServerSocket(serverId: string): ServerSocket {
   const [connected, setConnected] = useState(false);
   const [state, setState] = useState<ServerState | null>(null);
   const [stats, setStats] = useState<ServerStats | null>(null);
-  const [lines, setLines] = useState<ConsoleLine[]>([]);
+  const [lines, setLines] = useState<KeyedLine[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const closedRef = useRef(false);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idRef = useRef(0);
 
   const append = useCallback((incoming: ConsoleLine[]) => {
     setLines((prev) => {
-      const next = [...prev, ...incoming];
+      const stamped = incoming.map((l) => ({ ...l, _id: idRef.current++ }));
+      const next = [...prev, ...stamped];
       return next.length > MAX_LINES ? next.slice(next.length - MAX_LINES) : next;
     });
   }, []);

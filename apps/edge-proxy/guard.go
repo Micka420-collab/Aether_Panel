@@ -23,6 +23,7 @@ type Guard struct {
 	banDuration   time.Duration
 	handshakeWait time.Duration
 	proxyProtocol bool
+	maxIPs        int // hard cap on tracked IPs (bounds memory under a unique-IP flood)
 
 	blocklist map[string]bool
 	ips       map[string]*ipState
@@ -56,6 +57,7 @@ func LoadGuard() *Guard {
 		banDuration:   time.Duration(envInt("DDOS_BAN_SECONDS", 600)) * time.Second,
 		handshakeWait: time.Duration(envInt("DDOS_HANDSHAKE_MS", 4000)) * time.Millisecond,
 		proxyProtocol: os.Getenv("PROXY_PROTOCOL") == "1",
+		maxIPs:        envInt("DDOS_MAX_TRACKED_IPS", 100000),
 		blocklist:     map[string]bool{},
 		ips:           map[string]*ipState{},
 	}
@@ -73,6 +75,22 @@ func LoadGuard() *Guard {
 func (g *Guard) state(ip string) *ipState {
 	s := g.ips[ip]
 	if s == nil {
+		if len(g.ips) >= g.maxIPs {
+			// Map is full (likely a unique-IP flood). Evict idle, non-banned
+			// entries; if still full, return an unstored state so memory stays bounded.
+			now := time.Now()
+			for k, v := range g.ips {
+				if v.conns == 0 && now.After(v.banUntil) {
+					delete(g.ips, k)
+					if len(g.ips) < g.maxIPs {
+						break
+					}
+				}
+			}
+			if len(g.ips) >= g.maxIPs {
+				return &ipState{windowStart: time.Now()}
+			}
+		}
 		s = &ipState{windowStart: time.Now()}
 		g.ips[ip] = s
 	}

@@ -15,11 +15,13 @@ import {
   hostVolumePath,
   inspect,
   internalPort,
+  hostMemoryMb,
   killContainer,
   mapState,
   pullImage,
   rconHost,
   removeContainer,
+  runningManagedMemoryMb,
   startContainer,
   stopContainer,
   streamStats,
@@ -166,6 +168,21 @@ class ServerManager extends EventEmitter {
           await buildContainer(rt.spec);
         }
         rt.stopping = false;
+        // Admission control at START time: refuse if the servers already running
+        // + this one would exceed the host RAM budget (prevents host OOM). This
+        // fits "run one heavy server at a time" without blocking provisioning.
+        {
+          const reserveMb = Number(process.env.NODE_MEMORY_RESERVE_MB ?? 1536);
+          const budgetMb = hostMemoryMb() - reserveMb;
+          const runningMb = await runningManagedMemoryMb();
+          const needMb = rt.spec.limits.memoryMb;
+          if (needMb > 0 && runningMb + needMb > budgetMb) {
+            this.setState(serverId, ServerState.Offline);
+            throw new Error(
+              `Not enough free RAM to start: ${runningMb} MB already running, ${needMb} MB needed, ~${budgetMb} MB available. Stop another server first.`,
+            );
+          }
+        }
         this.setState(serverId, ServerState.Starting);
         this.pushConsole(serverId, "[Aether] Starting server…", "system");
         await startContainer(serverId);

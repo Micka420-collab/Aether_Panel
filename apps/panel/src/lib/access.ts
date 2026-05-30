@@ -40,3 +40,8 @@ export async function getServerContext(user: User, serverId: string): Promise<Se
 export function assertScope(ctx: ServerContext, scope: Scope): void {
   if (!hasScope(ctx.scopes, scope)) throw new HttpError(403, `Missing permission: ${scope}`);
 }
+
+/** Block state-changing actions on a suspended server (the billing/abuse lever). */
+export function assertNotSuspended(ctx: ServerContext): void {
+  if (ctx.server.suspended) throw new HttpError(403, "This server is suspended.");
+}

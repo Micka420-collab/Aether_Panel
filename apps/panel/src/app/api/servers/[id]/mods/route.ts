@@ -2,7 +2,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser, HttpError } from "@/lib/auth";
 import { json, noContent, route } from "@/lib/http";
-import { getServerContext, assertScope } from "@/lib/access";
+import { getServerContext, assertScope, assertNotSuspended } from "@/lib/access";
 import { buildServerSpec } from "@/lib/spec";
 import { DaemonClient } from "@/lib/daemon";
 import { modContext, checkCompatibility, resolveGameVersion } from "@/lib/modrinth";
@@ -51,6 +51,7 @@ export const POST = route(async (req, ctx: { params: { id: string } }) => {
   const user = await requireUser();
   const c = await getServerContext(user, ctx.params.id);
   assertScope(c, "startup.update");
+  assertNotSuspended(c);
   const { slug, type, source } = installSchema.parse(await req.json());
   const env = { ...((c.server.environment as Record<string, string>) ?? {}) };
 

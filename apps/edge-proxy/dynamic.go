@@ -8,13 +8,18 @@ import (
 // Dynamic mode polls the daemon for the current set of proxied servers and
 // (re)configures listeners on the fly — so creating a sleeping server in the
 // panel automatically makes it wake-on-join, with no proxy restart.
+type activeRoute struct {
+	stop  func()
+	route Route
+}
+
 type Dynamic struct {
 	p      *Proxy
-	active map[string]func() // listen address -> stop func
+	active map[string]activeRoute // listen address -> running listener + its route
 }
 
 func (d *Dynamic) run() {
-	d.active = map[string]func(){}
+	d.active = map[string]activeRoute{}
 	log.Println("[edge] dynamic mode — polling daemon for routes every 15s")
 	for {
 		routes, err := d.p.daemon.Routes()
@@ -32,15 +37,15 @@ func (d *Dynamic) reconcile(routes []Route) {
 	for _, r := range routes {
 		want[r.Listen] = r
 	}
-	// stop routes that disappeared
-	for listen, stop := range d.active {
-		if _, ok := want[listen]; !ok {
+	// stop routes that disappeared OR whose definition changed (backend/serverId/idle)
+	for listen, a := range d.active {
+		if w, ok := want[listen]; !ok || w != a.route {
 			log.Printf("[edge] removing route %s", listen)
-			stop()
+			a.stop()
 			delete(d.active, listen)
 		}
 	}
-	// start newly-added routes
+	// start newly-added (or just-changed, now removed above) routes
 	for listen, r := range want {
 		if _, ok := d.active[listen]; ok {
 			continue
@@ -50,6 +55,6 @@ func (d *Dynamic) reconcile(routes []Route) {
 			log.Printf("[edge] start %s failed: %v", listen, err)
 			continue
 		}
-		d.active[listen] = stop
+		d.active[listen] = activeRoute{stop: stop, route: r}
 	}
 }

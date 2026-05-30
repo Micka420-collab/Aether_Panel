@@ -55,8 +55,16 @@ func main() {
 		log.Fatal("no routes configured (set routes[] or enable dynamic mode)")
 	}
 	log.Printf("⟁ Aether edge proxy — %d static route(s), daemon %s", len(cfg.Routes), cfg.DaemonURL)
-	for i := 1; i < len(cfg.Routes); i++ {
-		go p.listen(cfg.Routes[i])
+	started := 0
+	for _, r := range cfg.Routes {
+		if _, err := p.startRoute(r); err != nil {
+			log.Printf("[edge] start %s failed: %v", r.Listen, err) // one bad route ≠ full outage
+			continue
+		}
+		started++
 	}
-	p.listen(cfg.Routes[0]) // block on the first route
+	if started == 0 {
+		log.Fatal("no routes could be started")
+	}
+	select {} // block forever
 }

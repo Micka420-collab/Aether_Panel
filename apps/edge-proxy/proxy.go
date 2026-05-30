@@ -49,7 +49,9 @@ func (p *Proxy) clientIP(conn net.Conn, br *bufio.Reader) string {
 			line, err := br.ReadString('\n')
 			if err == nil {
 				parts := strings.Fields(strings.TrimSpace(line))
-				if len(parts) >= 3 {
+				// Validate it's a real IP so a spoofed header can't mint arbitrary
+				// per-IP guard keys (defeating limits + bloating the IP map).
+				if len(parts) >= 3 && net.ParseIP(parts[2]) != nil {
 					return parts[2] // PROXY TCP4 <src> <dst> <sport> <dport>
 				}
 			}
@@ -85,6 +87,12 @@ func (p *Proxy) handleConn(route Route, conn net.Conn) {
 
 	// Tight deadline for the handshake defeats slow-loris / idle hold attacks.
 	conn.SetDeadline(time.Now().Add(p.handshakeTimeout()))
+
+	// Legacy pre-1.7 SLP ping starts with 0xFE (not a VarInt-framed packet);
+	// close cleanly instead of mis-parsing it and striking a legitimate client.
+	if b, perr := br.Peek(1); perr == nil && b[0] == 0xFE {
+		return
+	}
 
 	hs, err := readHandshake(br)
 	if err != nil {
@@ -168,11 +176,35 @@ func (p *Proxy) pipe(route Route, client net.Conn, br *bufio.Reader, hs *handsha
 		return
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() { defer wg.Done(); io.Copy(backend, br); backend.(*net.TCPConn).CloseWrite() }()
-	go func() { defer wg.Done(); io.Copy(client, backend); client.(*net.TCPConn).CloseWrite() }()
-	wg.Wait()
+	// Copy both directions with an idle deadline, and close BOTH ends as soon as
+	// either direction finishes — CloseWrite alone can't unblock a Read on a silent
+	// peer, which leaked goroutines/FDs/guard-slots on half-open sockets.
+	const idle = 5 * time.Minute
+	var once sync.Once
+	closeBoth := func() { once.Do(func() { client.Close(); backend.Close() }) }
+	go relay(backend, client, br, idle, closeBoth)   // client → backend (read via br)
+	relay(client, backend, backend, idle, closeBoth) // backend → client
+}
+
+// relay copies readFrom → dst until EOF or `idle` of no activity, then closes
+// both connections via done. srcConn is the connection backing readFrom (used to
+// set the read deadline; for the client side readFrom is the buffered reader).
+func relay(dst net.Conn, srcConn net.Conn, readFrom io.Reader, idle time.Duration, done func()) {
+	buf := make([]byte, 32*1024)
+	for {
+		srcConn.SetReadDeadline(time.Now().Add(idle))
+		n, err := readFrom.Read(buf)
+		if n > 0 {
+			dst.SetWriteDeadline(time.Now().Add(idle))
+			if _, werr := dst.Write(buf[:n]); werr != nil {
+				break
+			}
+		}
+		if err != nil {
+			break
+		}
+	}
+	done()
 }
 
 // watchIdle stops the server after it has been empty for IdleSeconds.
@@ -192,6 +224,9 @@ func (p *Proxy) watchIdle(route Route, stop <-chan struct{}) {
 			if err != nil || state != "running" {
 				emptySince = time.Time{}
 				continue
+			}
+			if online < 0 {
+				continue // unknown player count — don't reset the idle timer
 			}
 			if online == 0 {
 				if emptySince.IsZero() {
@@ -230,12 +265,4 @@ func (p *Proxy) startRoute(route Route) (func(), error) {
 		close(stop)
 		ln.Close()
 	}, nil
-}
-
-// listen starts a route and blocks forever (used by the static single-route path).
-func (p *Proxy) listen(route Route) {
-	if _, err := p.startRoute(route); err != nil {
-		log.Fatalf("listen %s: %v", route.Listen, err)
-	}
-	select {}
 }

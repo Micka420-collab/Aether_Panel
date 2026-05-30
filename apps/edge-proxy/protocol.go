@@ -51,12 +51,12 @@ func writeVarInt(w io.Writer, value int) error {
 	return err
 }
 
-func readString(r io.Reader) (string, error) {
+func readString(r io.Reader, max int) (string, error) {
 	n, err := readVarInt(r)
 	if err != nil {
 		return "", err
 	}
-	if n < 0 || n > 1<<16 {
+	if n < 0 || n > max {
 		return "", errors.New("string too long")
 	}
 	buf := make([]byte, n)
@@ -74,29 +74,35 @@ type handshake struct {
 
 // readHandshake reads the framed handshake packet from a buffered reader.
 func readHandshake(br *bufio.Reader) (*handshake, error) {
-	// packet length (we don't strictly need it but must consume the framing)
-	if _, err := readVarInt(br); err != nil {
+	// Use the declared packet length to BOUND every subsequent read, so a
+	// handshake can't declare a tiny frame yet a huge field (allocation amplification).
+	length, err := readVarInt(br)
+	if err != nil {
 		return nil, err
 	}
-	id, err := readVarInt(br)
+	if length <= 0 || length > 1<<15 { // 32 KiB is already absurd for a handshake
+		return nil, errors.New("invalid handshake length")
+	}
+	lr := &io.LimitedReader{R: br, N: int64(length)}
+	id, err := readVarInt(lr)
 	if err != nil {
 		return nil, err
 	}
 	if id != 0x00 {
 		return nil, errors.New("expected handshake packet 0x00")
 	}
-	proto, err := readVarInt(br) // protocol version
+	proto, err := readVarInt(lr) // protocol version
 	if err != nil {
 		return nil, err
 	}
-	if _, err := readString(br); err != nil { // server address
+	if _, err := readString(lr, 255); err != nil { // server address (spec max 255)
 		return nil, err
 	}
 	var port uint16
-	if err := binary.Read(br, binary.BigEndian, &port); err != nil { // server port
+	if err := binary.Read(lr, binary.BigEndian, &port); err != nil { // server port
 		return nil, err
 	}
-	next, err := readVarInt(br)
+	next, err := readVarInt(lr)
 	if err != nil {
 		return nil, err
 	}

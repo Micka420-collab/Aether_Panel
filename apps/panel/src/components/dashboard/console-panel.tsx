@@ -84,8 +84,8 @@ export function ConsolePanel({ socket, canCommand }: { socket: ServerSocket; can
         className="console-surface h-[440px] overflow-y-auto p-4 font-mono text-[12.5px] leading-relaxed"
       >
         {socket.lines.length === 0 && <div className="text-console-dim">Waiting for output…</div>}
-        {socket.lines.map((l, i) => (
-          <div key={i} className={cn("whitespace-pre-wrap break-words", lineClass(l.line, l.stream))}>
+        {socket.lines.map((l) => (
+          <div key={l._id} className={cn("whitespace-pre-wrap break-words", lineClass(l.line, l.stream))}>
             {l.line}
           </div>
         ))}

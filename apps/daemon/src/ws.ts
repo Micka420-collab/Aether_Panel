@@ -60,7 +60,10 @@ function handleConnection(ws: WebSocket, serverId: string) {
 
     if (msg.type === "auth") {
       try {
-        const claims = jwt.verify(msg.token, config.token) as WsClaims;
+        // Pin the algorithm (the panel signs HS256) so a forged token can't pick
+        // a different verification scheme; and sanity-check the claims shape.
+        const claims = jwt.verify(msg.token, config.token, { algorithms: ["HS256"] }) as WsClaims;
+        if (typeof claims.serverId !== "string" || !Array.isArray(claims.scopes ?? [])) throw new Error("invalid token claims");
         if (claims.serverId !== serverId) throw new Error("token/server mismatch");
         if (!manager.has(serverId)) throw new Error("server not registered on this node");
         authed = true;

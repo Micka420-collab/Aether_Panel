@@ -197,9 +197,9 @@ function BehaviourCard({ id, server }: { id: string; server: { autoStop: boolean
               type="number"
               min={1}
               max={1440}
-              value={Math.round(idle / 60)}
-              onChange={(e) => setIdle(Math.max(60, Number(e.target.value) * 60))}
-              onBlur={() => patch({ idleTimeout: idle })}
+              value={idle === 0 ? "" : String(Math.round(idle / 60))}
+              onChange={(e) => { const v = e.target.value; setIdle(v === "" ? 0 : Math.max(1, Number(v)) * 60); }}
+              onBlur={() => { const m = Math.min(1440, Math.max(1, Math.round(idle / 60) || 1)); setIdle(m * 60); patch({ idleTimeout: m * 60 }); }}
               className="input w-24 text-center"
             />
             <span className="text-sm text-white/40">min</span>
