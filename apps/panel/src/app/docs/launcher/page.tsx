@@ -79,6 +79,34 @@ GET  /api/v1/client/servers/{id}/websocket
 → { "token": "<jwt>", "socket": "ws://node:8080/api/servers/{id}/ws" }
 // connect, then send { "type": "auth", "token": "<jwt>" }`}</Code>
 
+      <h2 className="font-display text-2xl font-semibold text-white">4 · Manage files</h2>
+      <Code>{`GET  /api/v1/client/servers/{id}/files?path=/            → { path, entries:[{name,isDir,size,modifiedAt}] }
+GET  /api/v1/client/servers/{id}/files/content?path=/server.properties  → { path, content }
+PUT  /api/v1/client/servers/{id}/files/content  { "path":"/server.properties", "content":"..." }  → 204
+POST /api/v1/client/servers/{id}/files  { "op":"mkdir",  "path":"/mods" }                  → 204
+POST /api/v1/client/servers/{id}/files  { "op":"rename", "from":"/a.txt", "to":"/b.txt" }  → 204
+DELETE /api/v1/client/servers/{id}/files?path=/crash.txt                                    → 204
+
+// Binary artifacts (mod jars, world.zip, logs) — raw body, no JSON wrapping:
+GET  /api/v1/client/servers/{id}/files/download?path=/world/level.dat   → file stream
+POST /api/v1/client/servers/{id}/files/upload?path=/mods&name=cool.jar  (raw body) → { ok, name }
+
+// One-shot a modpack / world archive (.zip / .tar.gz), extracted into the volume:
+POST /api/v1/client/servers/{id}/files/import?name=pack.zip&clear=1     (raw body) → { files }`}</Code>
+
+      <h2 className="font-display text-2xl font-semibold text-white">5 · Backups</h2>
+      <Code>{`GET  /api/v1/client/servers/{id}/backups   → { backups:[{ id, name, sizeBytes, locked, completed, createdAt }] }
+POST /api/v1/client/servers/{id}/backups   { "name":"pre-update", "ignore":["dynmap"] }   → 201 { id, sizeBytes }
+POST /api/v1/client/servers/{id}/backups/{backupId}/restore   → { ok }   // stops the server, swaps atomically
+DELETE /api/v1/client/servers/{id}/backups/{backupId}         → 204`}</Code>
+
+      <h2 className="font-display text-2xl font-semibold text-white">6 · Settings &amp; reinstall</h2>
+      <Code>{`PATCH /api/v1/client/servers/{id}
+  { "name":"My SMP", "autoStop":true, "idleTimeout":600,
+    "variables": { "MOTD":"§bHello", "DIFFICULTY":"hard" } }   → { ok }   // applies on next start, never kills a live server
+
+POST  /api/v1/client/servers/{id}/reinstall   → 202 { ok }   // rebuild the container from spec; the data volume is kept`}</Code>
+
       <h2 className="font-display text-2xl font-semibold text-white">Endpoint reference</h2>
       <div className="glass mt-3 px-5 py-2">
         <Endpoint method="POST" path="/api/v1/auth/device/start" desc="Begin device-code login" />
@@ -93,6 +121,20 @@ GET  /api/v1/client/servers/{id}/websocket
         <Endpoint method="POST" path="/api/v1/client/servers/{id}/command" desc="Send a console command" />
         <Endpoint method="GET" path="/api/v1/client/servers/{id}/websocket" desc="Mint a live console token" />
         <Endpoint method="POST" path="/api/v1/client/servers/{id}/wake-link" desc="Create a no-login wake link" />
+        <Endpoint method="PATCH" path="/api/v1/client/servers/{id}" desc="Update settings / startup variables" />
+        <Endpoint method="POST" path="/api/v1/client/servers/{id}/reinstall" desc="Rebuild the container (keep data)" />
+        <Endpoint method="GET" path="/api/v1/client/servers/{id}/files" desc="List a directory" />
+        <Endpoint method="POST" path="/api/v1/client/servers/{id}/files" desc="mkdir | rename" />
+        <Endpoint method="DELETE" path="/api/v1/client/servers/{id}/files" desc="Delete a file / dir" />
+        <Endpoint method="GET" path="/api/v1/client/servers/{id}/files/content" desc="Read a text file" />
+        <Endpoint method="PUT" path="/api/v1/client/servers/{id}/files/content" desc="Write a text file" />
+        <Endpoint method="GET" path="/api/v1/client/servers/{id}/files/download" desc="Download any file (stream)" />
+        <Endpoint method="POST" path="/api/v1/client/servers/{id}/files/upload" desc="Upload a file (stream)" />
+        <Endpoint method="POST" path="/api/v1/client/servers/{id}/files/import" desc="Extract a .zip / .tar.gz" />
+        <Endpoint method="GET" path="/api/v1/client/servers/{id}/backups" desc="List backups" />
+        <Endpoint method="POST" path="/api/v1/client/servers/{id}/backups" desc="Create a backup" />
+        <Endpoint method="POST" path="/api/v1/client/servers/{id}/backups/{bid}/restore" desc="Restore a backup" />
+        <Endpoint method="DELETE" path="/api/v1/client/servers/{id}/backups/{bid}" desc="Delete a backup" />
       </div>
       <p className="text-sm text-white/45">
         API keys (created in your account) also work as bearer tokens. Keys carry scopes; tokens are capped to those

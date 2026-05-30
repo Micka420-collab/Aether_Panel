@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { route } from "@/lib/http";
 import { authApi, requireApiScope } from "@/lib/api-auth";
-import { getServerContext, assertScope } from "@/lib/access";
+import { getServerContext, assertScope, assertNotSuspended } from "@/lib/access";
 import { DaemonClient } from "@/lib/daemon";
 
 const schema = z.object({ command: z.string().min(1).max(2000) });
@@ -13,6 +13,7 @@ export const POST = route(async (req, ctx: { params: { id: string } }) => {
   // BOTH gates: the token must carry the scope AND the user must hold it on this server.
   requireApiScope(principal, "control.command");
   assertScope(c, "control.command");
+  assertNotSuspended(c);
   await new DaemonClient(c.node).command(c.server.id, command);
   return new Response(null, { status: 204 });
 });

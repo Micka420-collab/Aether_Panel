@@ -122,6 +122,40 @@ export class DaemonClient {
     return (await res.json()) as { files: number };
   }
 
+  /** Raw streaming download of a server file (returns the fetch Response to pipe through). */
+  downloadFile(serverId: string, path: string): Promise<Response> {
+    return fetch(`${this.base}/api/servers/${serverId}/files/download?path=${encodeURIComponent(path)}`, {
+      headers: { Authorization: `Bearer ${this.node.tokenSecret}` },
+      cache: "no-store",
+    });
+  }
+
+  /** Stream-upload a single file into the server's file manager (no buffering). */
+  async uploadFile(
+    serverId: string,
+    dir: string,
+    filename: string,
+    body: ReadableStream<Uint8Array> | Buffer,
+  ): Promise<void> {
+    const url = `${this.base}/api/servers/${serverId}/files/upload?path=${encodeURIComponent(dir)}&name=${encodeURIComponent(filename)}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${this.node.tokenSecret}`, "Content-Type": "application/octet-stream" },
+      body: body as any,
+      duplex: "half",
+      cache: "no-store",
+    } as RequestInit & { duplex: "half" });
+    if (!res.ok) {
+      let msg = `daemon ${res.status}`;
+      try {
+        msg = (await res.json())?.error ?? msg;
+      } catch {
+        /* noop */
+      }
+      throw new Error(msg);
+    }
+  }
+
   // backups
   createBackup(serverId: string, backupId: string, name: string, ignore?: string[]) {
     return this.req<BackupMeta>("POST", `/api/servers/${serverId}/backups`, { backupId, name, ignore });

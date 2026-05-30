@@ -2,7 +2,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { route, json } from "@/lib/http";
 import { authApi, requireApiScope } from "@/lib/api-auth";
-import { getServerContext, assertScope } from "@/lib/access";
+import { getServerContext, assertScope, assertNotSuspended } from "@/lib/access";
 import { DaemonClient } from "@/lib/daemon";
 import { audit } from "@/lib/audit";
 
@@ -15,6 +15,7 @@ export const POST = route(async (req, ctx: { params: { id: string } }) => {
   const scope = signal === "start" ? "control.start" : "control.stop";
   requireApiScope(principal, scope);
   assertScope(c, scope);
+  if (signal === "start" || signal === "restart") assertNotSuspended(c);
 
   await new DaemonClient(c.node).power(c.server.id, signal);
   await db.server.update({

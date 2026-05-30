@@ -2,7 +2,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { json, route } from "@/lib/http";
 import { issueSessionToken, issueRefreshToken } from "@/lib/api-auth";
-import { LAUNCHER_DEFAULT_SCOPES } from "@aether/shared";
+import { ALL_SCOPES } from "@aether/shared";
 
 const schema = z.object({ device_code: z.string().min(1) });
 
@@ -22,7 +22,10 @@ export const POST = route(async (req) => {
   const user = await db.user.findUnique({ where: { id: record.userId } });
   if (!user) return json({ error: "invalid_grant" }, 400);
 
-  const scopes = [...LAUNCHER_DEFAULT_SCOPES, "control.command"];
+  // The user is authorizing their OWN launcher for their OWN servers, so grant the
+  // full scope set (getServerContext still limits access to their servers).
+  // A future consent screen could let them narrow this per device.
+  const scopes = [...ALL_SCOPES];
   const access_token = await issueSessionToken(user.id, scopes);
   const refresh_token = await issueRefreshToken(user.id);
   await db.deviceAuth.delete({ where: { id: record.id } }).catch(() => {});

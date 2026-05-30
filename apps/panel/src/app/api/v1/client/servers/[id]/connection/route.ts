@@ -1,17 +1,18 @@
 import { route, json } from "@/lib/http";
-import { authApi } from "@/lib/api-auth";
+import { authApi, requireApiScope } from "@/lib/api-auth";
 import { getServerContext } from "@/lib/access";
 import { DaemonClient } from "@/lib/daemon";
 import { fqdnFor, isDnsConfigured } from "@/lib/dns";
-import { buildAddress, getTemplate, type ConnectionInfo, type ServerState } from "@aether/shared";
+import { buildAddress, getTemplate, hasScope, type ConnectionInfo, type ServerState } from "@aether/shared";
 
 /**
  * Everything a launcher needs to auto-join: the address/port to pass to the
  * game, plus live state, player count, version and MOTD.
  */
 export const GET = route(async (req, ctx: { params: { id: string } }) => {
-  const { user } = await authApi(req);
-  const c = await getServerContext(user, ctx.params.id);
+  const principal = await authApi(req);
+  requireApiScope(principal, "allocation.read");
+  const c = await getServerContext(principal.user, ctx.params.id);
   const tpl = getTemplate(c.server.templateId);
   const env = (c.server.environment as Record<string, string>) ?? {};
   const primary = c.allocations.find((a) => a.primary) ?? c.allocations[0];
@@ -22,7 +23,10 @@ export const GET = route(async (req, ctx: { params: { id: string } }) => {
   try {
     const status = await new DaemonClient(c.node).status(c.server.id);
     state = status.state;
-    if (status.stats?.players) players = { online: status.stats.players.online, max: status.stats.players.max };
+    // player count only if the token carries players.read
+    if (status.stats?.players && hasScope(principal.scopes, "players.read")) {
+      players = { online: status.stats.players.online, max: status.stats.players.max };
+    }
   } catch {
     /* node offline -> use cached */
   }

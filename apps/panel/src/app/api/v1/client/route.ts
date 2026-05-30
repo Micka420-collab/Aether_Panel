@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { json, route } from "@/lib/http";
-import { authApi } from "@/lib/api-auth";
+import { authApi, requireApiScope } from "@/lib/api-auth";
 import { reconcileStates } from "@/lib/server-state";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,9 @@ import { getTemplate, buildAddress } from "@aether/shared";
 
 /** List every server the authenticated user can access (owner or sub-user). */
 export const GET = route(async (req) => {
-  const { user } = await authApi(req);
+  const principal = await authApi(req);
+  requireApiScope(principal, "allocation.read"); // discovery returns join addresses
+  const user = principal.user;
   const servers = await db.server.findMany({
     where: { OR: [{ ownerId: user.id }, { subusers: { some: { userId: user.id } } }] },
     include: { allocations: true, node: true },
