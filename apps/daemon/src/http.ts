@@ -89,8 +89,10 @@ export function createHttpApp() {
     wrap(async (req, res) => {
       const spec = req.body as ServerBuildSpec;
       if (!spec?.serverId) return res.status(400).json({ error: "missing serverId" });
-      // build asynchronously; progress is streamed via the install/console channels
-      manager.register(spec, true).catch((e) => logger.error({ e }, "register failed"));
+      // rebuild=0 -> persist the new spec only (applies on next start); otherwise
+      // (re)build the container. build runs async; progress streams over install/console.
+      const rebuild = req.query.rebuild !== "0";
+      manager.register(spec, rebuild).catch((e) => logger.error({ e }, "register failed"));
       res.status(202).json({ accepted: true });
     }),
   );

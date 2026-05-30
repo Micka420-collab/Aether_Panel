@@ -39,8 +39,14 @@ export class DaemonClient {
   system() {
     return this.req<any>("GET", "/api/system");
   }
-  registerServer(spec: ServerBuildSpec) {
-    return this.req<{ accepted: boolean }>("POST", "/api/servers", spec);
+  /**
+   * Send the build spec to the node. With `rebuild: false` the node only updates
+   * the persisted spec (applies on next start) instead of force-recreating the
+   * container — use that for env-only changes (mods, startup variables) so a
+   * running server isn't killed out from under players on every edit.
+   */
+  registerServer(spec: ServerBuildSpec, rebuild = true) {
+    return this.req<{ accepted: boolean }>("POST", `/api/servers${rebuild ? "" : "?rebuild=0"}`, spec);
   }
   status(serverId: string) {
     return this.req<{ state: ServerState; stats: ServerStats | null; players: unknown }>(

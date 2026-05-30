@@ -43,6 +43,8 @@ interface Runtime {
   playerTimer?: NodeJS.Timeout;
   diskTimer?: NodeJS.Timeout;
   players?: { online: number; max: number; sample: string[] };
+  /** intent flag: we asked the container to stop, so a `die` event is clean (Offline), not a crash (Errored). */
+  stopping?: boolean;
 }
 
 /**
@@ -151,12 +153,19 @@ class ServerManager extends EventEmitter {
         if (rt.state === ServerState.Running || rt.state === ServerState.Starting) return;
         if (rt.state === ServerState.Installing)
           throw new Error("Server is still installing — please wait for it to finish, then press Start.");
-        // If the container isn't there yet (e.g. Start was pressed while the
-        // image was still pulling on a previous attempt), build it now.
+        // If the container isn't there yet (e.g. the image was pruned, or a prior
+        // build never completed), (re)build it now — pulling the image first,
+        // since buildContainer only creates and would throw "No such image".
         if (!(await inspect(serverId))) {
           this.pushConsole(serverId, "[Aether] Building container…", "system");
+          try {
+            await pullImage(rt.spec.dockerImage, (l) => this.emit(`install:${serverId}`, l));
+          } catch (e) {
+            logger.warn({ e, image: rt.spec.dockerImage }, "pull before start failed (may exist locally)");
+          }
           await buildContainer(rt.spec);
         }
+        rt.stopping = false;
         this.setState(serverId, ServerState.Starting);
         this.pushConsole(serverId, "[Aether] Starting server…", "system");
         await startContainer(serverId);
@@ -182,6 +191,7 @@ class ServerManager extends EventEmitter {
         await this.gracefulStop(serverId);
         break;
       case "kill":
+        rt.stopping = true; // intentional — the resulting die is clean, not a crash
         this.pushConsole(serverId, "[Aether] Killing server (forced)…", "system");
         await killContainer(serverId);
         this.setState(serverId, ServerState.Offline);
@@ -193,6 +203,9 @@ class ServerManager extends EventEmitter {
   /** Graceful stop: prefer the template's console stop command, fall back to SIGTERM. */
   private async gracefulStop(serverId: string): Promise<void> {
     const rt = this.requireRuntime(serverId);
+    // Mark intent up front (covers `restart`, which calls us without setting
+    // Stopping) so the asynchronous docker `die` event is treated as a clean stop.
+    rt.stopping = true;
     const stopCmd = rt.spec.stopCommand;
     try {
       // RCON-capable games with a real console command (e.g. Minecraft "stop").
@@ -361,9 +374,12 @@ class ServerManager extends EventEmitter {
     const rt = this.servers.get(serverId);
     if (!rt) return;
     if (action === "die" || action === "stop") {
-      this.setState(serverId, rt.state === ServerState.Stopping ? ServerState.Offline : ServerState.Errored);
+      // Clean stop only when WE asked for it; otherwise it's a crash.
+      this.setState(serverId, rt.stopping ? ServerState.Offline : ServerState.Errored);
+      rt.stopping = false;
       this.endStreaming(serverId);
     } else if (action === "start") {
+      rt.stopping = false;
       if (rt.state !== ServerState.Running) this.setState(serverId, ServerState.Starting);
       this.beginStreaming(serverId);
     }

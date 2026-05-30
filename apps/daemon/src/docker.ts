@@ -35,14 +35,30 @@ export function isContainerized(): Promise<boolean> {
   })());
 }
 
+async function daemonOnGameNetwork(): Promise<boolean> {
+  try {
+    const self = await docker.getContainer(os.hostname()).inspect();
+    return Object.keys(self.NetworkSettings?.Networks ?? {}).includes(GAME_NETWORK);
+  } catch {
+    return false;
+  }
+}
+
 let gameNetP: Promise<string | null> | null = null;
 /**
  * Ensure the dedicated game network exists and the daemon is attached to it.
  * Returns the network name to put game containers on, or null on a host-mode
  * daemon (where 127.0.0.1 + host-published ports already work).
+ *
+ * We VERIFY the daemon is actually on the network before caching success:
+ * createNetwork/connect swallow benign "already exists/attached" errors, but a
+ * genuine failure must not be cached as success — otherwise game containers get
+ * placed on a network the daemon can't reach and RCON-by-name breaks forever. On
+ * real failure we reset the cache so the next buildContainer retries.
  */
 export function ensureGameNetwork(): Promise<string | null> {
-  return (gameNetP ??= (async () => {
+  if (gameNetP) return gameNetP;
+  gameNetP = (async () => {
     if (!(await isContainerized())) return null;
     try {
       await docker.createNetwork({ Name: GAME_NETWORK, Driver: "bridge", CheckDuplicate: true });
@@ -52,15 +68,26 @@ export function ensureGameNetwork(): Promise<string | null> {
     try {
       await docker.getNetwork(GAME_NETWORK).connect({ Container: os.hostname() });
     } catch {
-      /* daemon already attached */
+      /* may already be attached */
+    }
+    if (!(await daemonOnGameNetwork())) {
+      gameNetP = null; // don't cache failure — allow a later retry
+      logger.warn("daemon not attached to the game network; RCON-by-name unavailable until retry");
+      return null;
     }
     return GAME_NETWORK;
-  })());
+  })();
+  return gameNetP;
 }
 
-/** Host the daemon should dial to reach a game container's RCON. */
+/**
+ * Host the daemon should dial for a game container's RCON. Tied to
+ * ensureGameNetwork so it matches where buildContainer actually placed the
+ * container: the container name when the shared network is confirmed, else
+ * 127.0.0.1 (host-mode daemon).
+ */
 export async function rconHost(serverId: string): Promise<string> {
-  return (await isContainerized()) ? containerName(serverId) : "127.0.0.1";
+  return (await ensureGameNetwork()) ? containerName(serverId) : "127.0.0.1";
 }
 
 export function hostVolumePath(serverId: string): string {

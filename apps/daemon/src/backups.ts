@@ -84,19 +84,43 @@ export async function restoreBackup(serverId: string, backupId: string): Promise
   const file = backupFile(serverId, backupId);
   const dest = hostVolumePath(serverId);
   await fs.access(file);
-  // Clear current volume contents, then extract.
-  await fs.rm(dest, { recursive: true, force: true });
-  await fs.mkdir(dest, { recursive: true });
-  await new Promise<void>((resolve, reject) => {
-    const rs = createReadStream(file);
-    const gunzip = zlib.createGunzip();
-    const extract = tar.extract(dest);
-    rs.on("error", reject);
-    gunzip.on("error", reject);
-    extract.on("error", reject);
-    extract.on("finish", () => resolve());
-    rs.pipe(gunzip).pipe(extract);
-  });
+
+  // Crash-safe restore: extract into a TEMP sibling dir first, and only swap it
+  // in once the stream has finished without error. A truncated/corrupt archive or
+  // a disk-full mid-extract therefore leaves the original volume intact (the old
+  // code wiped the live volume before extracting — total data loss on failure).
+  const exists = (p: string) => fs.access(p).then(() => true).catch(() => false);
+  const tmp = `${dest}.restore-${process.pid}`;
+  const old = `${dest}.old-${process.pid}`;
+  await fs.rm(tmp, { recursive: true, force: true }).catch(() => {});
+  await fs.mkdir(tmp, { recursive: true });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const rs = createReadStream(file);
+      const gunzip = zlib.createGunzip();
+      const extract = tar.extract(tmp);
+      rs.on("error", reject);
+      gunzip.on("error", reject);
+      extract.on("error", reject);
+      extract.on("finish", () => resolve());
+      rs.pipe(gunzip).pipe(extract);
+    });
+
+    // Preserve the daemon's internal spec dir if the archive didn't include it,
+    // so the server stays manageable after a restart.
+    if (!(await exists(path.join(tmp, ".aether"))) && (await exists(path.join(dest, ".aether")))) {
+      await fs.cp(path.join(dest, ".aether"), path.join(tmp, ".aether"), { recursive: true });
+    }
+
+    // Swap the restored tree in. Same-filesystem renames are atomic and fast.
+    await fs.rename(dest, old);
+    await fs.rename(tmp, dest);
+    await fs.rm(old, { recursive: true, force: true }).catch(() => {});
+  } catch (e) {
+    // Original volume untouched — just clean up the temp dir.
+    await fs.rm(tmp, { recursive: true, force: true }).catch(() => {});
+    throw e;
+  }
 }
 
 export async function deleteBackup(serverId: string, backupId: string): Promise<void> {

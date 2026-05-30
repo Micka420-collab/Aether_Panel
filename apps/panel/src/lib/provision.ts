@@ -53,6 +53,18 @@ export async function createServer(user: User, input: CreateServerInput) {
     swapMb: input.limits?.swapMb ?? 0,
   };
 
+  // Admission control: don't commit more memory than the node has, or working
+  // sets exceed RAM and the host OOM-killer reaps containers (and the daemon).
+  const committed = await db.server.aggregate({ _sum: { memoryMb: true }, where: { nodeId: node.id } });
+  const usedMb = committed._sum.memoryMb ?? 0;
+  if (usedMb + limits.memoryMb > node.memoryMb) {
+    const freeGb = Math.max(0, (node.memoryMb - usedMb) / 1024).toFixed(1);
+    throw new HttpError(
+      503,
+      `Not enough free memory on this node (${freeGb} GB free, ${(limits.memoryMb / 1024).toFixed(1)} GB requested). Free up RAM, pick a smaller plan, or add a node.`,
+    );
+  }
+
   // SECURITY: only allow images declared by the template — never an arbitrary
   // user-supplied image (which the daemon would pull & run on the host).
   const allowedImages = new Set(Object.values(template.dockerImages));

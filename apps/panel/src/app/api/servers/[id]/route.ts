@@ -126,11 +126,13 @@ export const PATCH = route(async (req, ctx: { params: { id: string } }) => {
   });
 
   if (rebuild) {
-    // re-send the build spec so the container picks up new variables on next boot
+    // Persist the new spec on the node without recreating the container; the new
+    // variables/flags apply on the next start (so saving settings never kills a
+    // running server).
     try {
-      await new DaemonClient(c.node).registerServer(buildServerSpec(updated, updated.allocations));
+      await new DaemonClient(c.node).registerServer(buildServerSpec(updated, updated.allocations), false);
     } catch (e: any) {
-      throw new HttpError(502, `Saved, but the node could not rebuild: ${e?.message}`);
+      throw new HttpError(502, `Saved, but the node could not be updated: ${e?.message}`);
     }
   }
 

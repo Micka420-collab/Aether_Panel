@@ -19,8 +19,10 @@ async function applyEnv(serverId: string, env: Record<string, string>) {
     data: { environment: env as object },
     include: { allocations: true, node: true },
   });
-  // re-send the build spec so the change applies on next (re)start
-  await new DaemonClient(updated.node).registerServer(buildServerSpec(updated, updated.allocations));
+  // Persist the new spec on the node WITHOUT rebuilding — the mod applies on the
+  // next start. (rebuild=true would force-recreate and kill a running server, and
+  // re-pull the image, on every single mod install/remove.)
+  await new DaemonClient(updated.node).registerServer(buildServerSpec(updated, updated.allocations), false);
 }
 
 export const dynamic = "force-dynamic";

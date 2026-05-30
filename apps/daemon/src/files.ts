@@ -3,6 +3,8 @@ import fsSync from "node:fs";
 import { createReadStream, createWriteStream } from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
+import { Transform } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import tar from "tar-fs";
 import unzipper from "unzipper";
 import type { FileEntry } from "@aether/shared";
@@ -146,6 +148,22 @@ export async function saveUpload(serverId: string, dir: string, filename: string
 }
 
 const ARCHIVE_RE = /\.(zip|tar\.gz|tgz|tar)$/i;
+// Import limits — bound disk usage so an over-large archive or a zip/gzip bomb
+// can't fill the shared host disk (taking down every server on the node).
+const MAX_UPLOAD_BYTES = 4 * 1024 ** 3; // compressed upload cap
+const MAX_TOTAL_BYTES = 12 * 1024 ** 3; // decompressed cap (actual bytes written)
+const MAX_ENTRIES = 50_000;
+
+/** A Transform that errors once more than `limit` bytes have passed through it. */
+function byteCap(getCount: () => number, addCount: (n: number) => void, limit: number, label: string) {
+  return new Transform({
+    transform(chunk, _enc, cb) {
+      addCount(chunk.length);
+      if (getCount() > limit) return cb(new Error(`${label} exceeds the ${Math.round(limit / 1024 ** 3)} GB limit`));
+      cb(null, chunk);
+    },
+  });
+}
 
 /**
  * Import an existing server: accept an uploaded archive (.zip / .tar.gz / .tgz / .tar)
@@ -177,47 +195,44 @@ export async function importArchive(
   const tmpFile = path.join(config.dataDir, `.import-${stamp}${isZip ? ".zip" : ".tar"}`);
   const tmpDir = path.join(config.dataDir, `.import-${stamp}.d`);
 
-  // 1. stream the upload to a temp file
-  await new Promise<void>((resolve, reject) => {
-    const ws = createWriteStream(tmpFile);
-    source.pipe(ws);
-    ws.on("finish", () => resolve());
-    ws.on("error", reject);
-    source.on("error", reject);
-  });
+  // 1. stream the upload to a temp file (capped so a giant upload can't fill disk)
+  let uploaded = 0;
+  await pipeline(
+    source,
+    byteCap(() => uploaded, (n) => (uploaded += n), MAX_UPLOAD_BYTES, "uploaded archive"),
+    createWriteStream(tmpFile),
+  );
 
   try {
     await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
     await fs.mkdir(tmpDir, { recursive: true });
     const realTmp = fsSync.realpathSync(tmpDir);
 
-    // 2. extract into the isolated temp dir (path-traversal guarded)
+    // Cumulative decompressed-byte counter shared across all entries — guards
+    // against zip/gzip bombs that expand far beyond the (capped) upload size.
+    let written = 0;
+    const cap = () => byteCap(() => written, (n) => (written += n), MAX_TOTAL_BYTES, "decompressed archive");
+
+    // 2. extract into the isolated temp dir (path-traversal + size guarded)
     if (isZip) {
       const directory = await unzipper.Open.file(tmpFile);
+      let entries = 0;
       for (const entry of directory.files) {
         if (entry.type !== "File") continue;
+        if (++entries > MAX_ENTRIES) throw new Error(`archive has too many files (> ${MAX_ENTRIES})`);
         const dest = path.resolve(realTmp, entry.path);
         if (!within(realTmp, dest)) continue; // zip-slip: entry escapes the temp dir — skip it
         await fs.mkdir(path.dirname(dest), { recursive: true });
-        await new Promise<void>((resolve, reject) => {
-          entry.stream().pipe(createWriteStream(dest)).on("finish", () => resolve()).on("error", reject);
-        });
+        await pipeline(entry.stream(), cap(), createWriteStream(dest));
       }
     } else {
-      await new Promise<void>((resolve, reject) => {
-        const rs = createReadStream(tmpFile);
-        const extract = tar.extract(realTmp); // tar-fs v3 rejects entries that escape
-        rs.on("error", reject);
-        extract.on("error", reject);
-        extract.on("finish", () => resolve());
-        if (lower.endsWith(".tar")) {
-          rs.pipe(extract);
-        } else {
-          const gz = zlib.createGunzip();
-          gz.on("error", reject);
-          rs.pipe(gz).pipe(extract);
-        }
-      });
+      const rs = createReadStream(tmpFile);
+      const extract = tar.extract(realTmp); // tar-fs v3 rejects entries that escape
+      if (lower.endsWith(".tar")) {
+        await pipeline(rs, cap(), extract);
+      } else {
+        await pipeline(rs, zlib.createGunzip(), cap(), extract);
+      }
     }
 
     // 3. strip a single wrapping directory if that's all the archive contains
