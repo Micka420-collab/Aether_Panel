@@ -172,7 +172,7 @@ export function ServerDetail({ id }: { id: string }) {
         {tab === "schedules" && <SchedulesPanel id={id} canManage={can("schedule.update")} />}
         {tab === "settings" && <SettingsPanel id={id} detail={detail} onSaved={load} canRename={can("settings.rename")} canStartup={can("startup.update")} />}
         {tab === "backups" && <BackupsPanel id={id} canCreate={can("backup.create")} canDelete={can("backup.delete")} canRestore={can("backup.restore")} />}
-        {tab === "network" && <NetworkPanel detail={detail} isOwner={detail.isOwner} id={id} />}
+        {tab === "network" && <NetworkPanel detail={detail} isOwner={detail.isOwner} id={id} onChanged={load} />}
         {tab === "subusers" && <SubusersPanel id={id} />}
       </div>
     </div>

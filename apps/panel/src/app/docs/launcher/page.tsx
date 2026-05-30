@@ -105,7 +105,9 @@ DELETE /api/v1/client/servers/{id}/backups/{backupId}         → 204`}</Code>
   { "name":"My SMP", "autoStop":true, "idleTimeout":600,
     "variables": { "MOTD":"§bHello", "DIFFICULTY":"hard" } }   → { ok }   // applies on next start, never kills a live server
 
-POST  /api/v1/client/servers/{id}/reinstall   → 202 { ok }   // rebuild the container from spec; the data volume is kept`}</Code>
+POST  /api/v1/client/servers/{id}/reinstall   → 202 { ok }   // rebuild the container from spec; the data volume is kept
+
+PATCH /api/v1/client/servers/{id}/allocation  { "port": 25565 }  → { ok, port }   // change the game port (rebuilds)`}</Code>
 
       <h2 className="font-display text-2xl font-semibold text-white">Endpoint reference</h2>
       <div className="glass mt-3 px-5 py-2">
@@ -123,6 +125,7 @@ POST  /api/v1/client/servers/{id}/reinstall   → 202 { ok }   // rebuild the co
         <Endpoint method="POST" path="/api/v1/client/servers/{id}/wake-link" desc="Create a no-login wake link" />
         <Endpoint method="PATCH" path="/api/v1/client/servers/{id}" desc="Update settings / startup variables" />
         <Endpoint method="POST" path="/api/v1/client/servers/{id}/reinstall" desc="Rebuild the container (keep data)" />
+        <Endpoint method="PATCH" path="/api/v1/client/servers/{id}/allocation" desc="Change the game port" />
         <Endpoint method="GET" path="/api/v1/client/servers/{id}/files" desc="List a directory" />
         <Endpoint method="POST" path="/api/v1/client/servers/{id}/files" desc="mkdir | rename" />
         <Endpoint method="DELETE" path="/api/v1/client/servers/{id}/files" desc="Delete a file / dir" />

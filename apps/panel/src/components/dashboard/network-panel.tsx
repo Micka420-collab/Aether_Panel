@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Link2, Copy, Check, Loader2, Globe, X, CheckCircle2 } from "lucide-react";
+import { Link2, Copy, Check, Loader2, Globe, X, CheckCircle2, ArrowRightLeft } from "lucide-react";
 import { api } from "@/lib/client";
 import { cn } from "@/lib/util";
 
@@ -13,11 +13,37 @@ interface Alloc {
   primary: boolean;
 }
 
-export function NetworkPanel({ detail, isOwner, id }: { detail: any; isOwner: boolean; id: string }) {
+export function NetworkPanel({ detail, isOwner, id, onChanged }: { detail: any; isOwner: boolean; id: string; onChanged?: () => void }) {
   const allocations: Alloc[] = detail.allocations ?? [];
+  const primary = allocations.find((a) => a.primary) ?? allocations[0];
   const [wakeUrl, setWakeUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [newPort, setNewPort] = useState("");
+  const [savingPort, setSavingPort] = useState(false);
+  const [portError, setPortError] = useState<string | null>(null);
+  const [portMsg, setPortMsg] = useState<string | null>(null);
+
+  async function changePort() {
+    const p = Number(newPort);
+    if (!Number.isInteger(p) || p < 1024 || p > 65535) {
+      setPortError("Port must be a number between 1024 and 65535.");
+      return;
+    }
+    setSavingPort(true);
+    setPortError(null);
+    setPortMsg(null);
+    try {
+      await api(`/api/servers/${id}/allocation`, { method: "PATCH", json: { port: p } });
+      setPortMsg(`Game port changed to ${p}. Start the server to apply it.`);
+      setNewPort("");
+      onChanged?.();
+    } catch (e: any) {
+      setPortError(e.message);
+    } finally {
+      setSavingPort(false);
+    }
+  }
 
   async function makeLink() {
     setBusy(true);
@@ -68,6 +94,34 @@ export function NetworkPanel({ detail, isOwner, id }: { detail: any; isOwner: bo
             </tbody>
           </table>
         </div>
+
+        {isOwner && primary && (
+          <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-white">
+              <ArrowRightLeft className="h-4 w-4 text-cyan" /> Change game port
+            </div>
+            <p className="mt-1 text-xs text-white/45">
+              The port players connect to (currently <span className="font-mono text-white/70">{primary.port}</span>).
+              Changing it rebuilds the server — it stops, so start it again afterwards.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                type="number"
+                min={1024}
+                max={65535}
+                value={newPort}
+                onChange={(e) => setNewPort(e.target.value)}
+                placeholder={String(primary.port)}
+                className="input w-32"
+              />
+              <button onClick={changePort} disabled={savingPort || !newPort} className="btn-primary">
+                {savingPort ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRightLeft className="h-4 w-4" />} Change port
+              </button>
+            </div>
+            {portError && <p className="mt-2 text-xs text-danger">{portError}</p>}
+            {portMsg && <p className="mt-2 text-xs text-online">{portMsg}</p>}
+          </div>
+        )}
       </div>
 
       <DomainCard id={id} isOwner={isOwner} />
