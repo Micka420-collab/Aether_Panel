@@ -5,6 +5,7 @@ import { json, route } from "@/lib/http";
 import { createServer } from "@/lib/provision";
 import { getTemplate, buildAddress, requireTemplate } from "@aether/shared";
 import { DEFAULT_PLANS } from "@/lib/plans";
+import { reconcileStates } from "@/lib/server-state";
 
 export const GET = route(async () => {
   const user = await requireUser();
@@ -13,6 +14,7 @@ export const GET = route(async () => {
     include: { allocations: true, node: true },
     orderBy: { createdAt: "desc" },
   });
+  const states = await reconcileStates(servers);
 
   const data = servers.map((s) => {
     const tpl = getTemplate(s.templateId);
@@ -26,7 +28,7 @@ export const GET = route(async () => {
       templateName: tpl?.name ?? s.templateId,
       icon: tpl?.icon ?? "🎮",
       color: tpl?.color ?? "#00B4D8",
-      state: s.state,
+      state: states.get(s.id) ?? s.state,
       owner: s.ownerId === user.id,
       memoryMb: s.memoryMb,
       cpuPercent: s.cpuPercent,

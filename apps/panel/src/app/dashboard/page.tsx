@@ -4,6 +4,8 @@ import { getTemplate, buildAddress } from "@aether/shared";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { StateBadge } from "@/components/dashboard/state-badge";
+import { AutoRefresh } from "@/components/dashboard/auto-refresh";
+import { reconcileStates } from "@/lib/server-state";
 import { formatBytes } from "@/lib/util";
 
 export const dynamic = "force-dynamic";
@@ -12,12 +14,15 @@ export default async function DashboardHome() {
   const user = await requireUser();
   const servers = await db.server.findMany({
     where: { OR: [{ ownerId: user.id }, { subusers: { some: { userId: user.id } } }] },
-    include: { allocations: true },
+    include: { allocations: true, node: true },
     orderBy: { createdAt: "desc" },
   });
+  // Real, current state from the node (heals "stuck on stopping/starting" rows).
+  const states = await reconcileStates(servers);
 
   return (
     <div>
+      <AutoRefresh seconds={6} />
       <div className="flex items-end justify-between">
         <div>
           <h1 className="font-display text-3xl font-bold text-white">Your servers</h1>
@@ -64,7 +69,7 @@ export default async function DashboardHome() {
                       <p className="text-xs text-white/40">{tpl?.name ?? s.templateId}</p>
                     </div>
                   </div>
-                  <StateBadge state={s.state} />
+                  <StateBadge state={states.get(s.id) ?? s.state} />
                 </div>
                 <div className="mt-4 rounded-lg border border-white/5 bg-black/20 px-3 py-2 font-mono text-xs text-cyan-light">
                   {address}
