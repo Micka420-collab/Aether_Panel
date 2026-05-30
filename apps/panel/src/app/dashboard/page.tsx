@@ -5,7 +5,9 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { StateBadge } from "@/components/dashboard/state-badge";
 import { AutoRefresh } from "@/components/dashboard/auto-refresh";
+import { NodeResources } from "@/components/dashboard/node-resources";
 import { reconcileStates } from "@/lib/server-state";
+import { DaemonClient } from "@/lib/daemon";
 import { formatBytes } from "@/lib/util";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +21,24 @@ export default async function DashboardHome() {
   });
   // Real, current state from the node (heals "stuck on stopping/starting" rows).
   const states = await reconcileStates(servers);
+  const runningCount = [...states.values()].filter((s) => s === "running").length;
+
+  // Live host RAM for the resources widget (best-effort).
+  let ramMb: { total: number; available: number } | null = null;
+  const node = servers[0]?.node ?? (await db.node.findFirst());
+  if (node) {
+    try {
+      const sys = await new DaemonClient(node).system();
+      if (sys?.memTotal) {
+        ramMb = {
+          total: Math.round(sys.memTotal / 1048576),
+          available: Math.round((sys.memAvailable ?? sys.memFree ?? 0) / 1048576),
+        };
+      }
+    } catch {
+      /* node unreachable */
+    }
+  }
 
   return (
     <div>
@@ -32,6 +52,10 @@ export default async function DashboardHome() {
           <Plus className="h-4 w-4" /> New server
         </Link>
       </div>
+
+      {ramMb && servers.length > 0 && (
+        <NodeResources totalMb={ramMb.total} availableMb={ramMb.available} running={runningCount} />
+      )}
 
       {servers.length === 0 ? (
         <div className="glass mt-8 flex flex-col items-center justify-center px-6 py-20 text-center">

@@ -42,6 +42,15 @@ export async function monitorTick(): Promise<void> {
       await new DaemonClient(node).health();
       reachable.add(node.id);
       await resolve(`node.down:${node.id}`);
+      // Keep the node's capacity in sync with the host's real physical RAM, so
+      // memory admission/display are accurate without manual tuning.
+      try {
+        const sys = await new DaemonClient(node).system();
+        const mb = Math.round((sys?.memTotal ?? 0) / (1024 * 1024));
+        if (mb > 0 && mb !== node.memoryMb) await db.node.update({ where: { id: node.id }, data: { memoryMb: mb } });
+      } catch {
+        /* system endpoint optional */
+      }
     } catch {
       await raise(`node.down:${node.id}`, "critical", `Node "${node.name}" is unreachable`, { nodeId: node.id });
     }

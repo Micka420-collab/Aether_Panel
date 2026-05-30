@@ -7,7 +7,7 @@ import type { ServerBuildSpec } from "@aether/shared";
 import { config } from "./config.js";
 import { logger } from "./logger.js";
 import { manager } from "./server-manager.js";
-import { docker } from "./docker.js";
+import { docker, hostAvailableMb, runningManagedMemoryMb } from "./docker.js";
 import * as files from "./files.js";
 import * as backups from "./backups.js";
 
@@ -66,6 +66,8 @@ export function createHttpApp() {
         loadavg: os.loadavg(),
         memTotal: os.totalmem(),
         memFree: os.freemem(),
+        memAvailable: (await hostAvailableMb()) * 1024 * 1024,
+        runningMemMb: await runningManagedMemoryMb(),
         uptime: os.uptime(),
         publicIp: config.publicIp,
         docker: dockerInfo

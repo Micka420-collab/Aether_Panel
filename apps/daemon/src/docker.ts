@@ -95,6 +95,24 @@ export function hostMemoryMb(): number {
   return Math.round(os.totalmem() / (1024 * 1024));
 }
 
+/**
+ * RAM actually available for new allocations, in MB. Reads /proc/meminfo's
+ * MemAvailable (host-wide, so it accounts for ALL processes — including game
+ * containers started outside Aether and reclaimable cache). Falls back to
+ * os.freemem() off Linux. This is the basis for start-time admission so we never
+ * start a server the host can't fit.
+ */
+export async function hostAvailableMb(): Promise<number> {
+  try {
+    const meminfo = await fs.readFile("/proc/meminfo", "utf8");
+    const m = meminfo.match(/MemAvailable:\s+(\d+)\s+kB/);
+    if (m) return Math.round(Number(m[1]) / 1024);
+  } catch {
+    /* not Linux / unreadable */
+  }
+  return Math.round(os.freemem() / (1024 * 1024));
+}
+
 /** Sum of the memory limits of currently-RUNNING Aether game containers (MB). */
 export async function runningManagedMemoryMb(): Promise<number> {
   try {

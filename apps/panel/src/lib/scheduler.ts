@@ -2,6 +2,7 @@ import "server-only";
 import parser from "cron-parser";
 import { db } from "./db";
 import { DaemonClient } from "./daemon";
+import { enforceBackupRetention } from "./backups";
 import { meterBilling } from "./billing";
 import { monitorTick } from "./monitor";
 
@@ -46,6 +47,7 @@ async function runTask(
       if (task.payload.trim()) await client.command(server.id, task.payload.trim());
       break;
     case "BACKUP": {
+      await enforceBackupRetention(server.id, server.node);
       const count = await db.backup.count({ where: { serverId: server.id } });
       const row = await db.backup.create({
         data: { serverId: server.id, name: task.payload.trim() || `Scheduled #${count + 1}`, completed: false },

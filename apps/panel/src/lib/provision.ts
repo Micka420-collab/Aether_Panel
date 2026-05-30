@@ -1,5 +1,5 @@
 import "server-only";
-import type { User } from "@prisma/client";
+import type { User, Prisma } from "@prisma/client";
 import { requireTemplate, resolveEnvironment } from "@aether/shared";
 import { db } from "./db";
 import { HttpError } from "./auth";
@@ -33,19 +33,6 @@ export async function createServer(user: User, input: CreateServerInput) {
   // Resolve environment from template defaults + chosen variables (+ stable secrets).
   const environment = resolveEnvironment(template, input.variables ?? {}, { randomString });
 
-  // Gather used ports on the node, then allocate this server's ports.
-  const existing = await db.allocation.findMany({ where: { nodeId: node.id }, select: { port: true } });
-  const used = new Set(existing.map((a) => a.port));
-  const pickPort = (desired: number): number => {
-    for (let p = desired; p < desired + 2000; p++) {
-      if (!used.has(p)) {
-        used.add(p);
-        return p;
-      }
-    }
-    throw new HttpError(503, "No free ports available on the node.");
-  };
-
   const limits = {
     memoryMb: input.limits?.memoryMb ?? template.resources.memoryMb,
     cpuPercent: input.limits?.cpuPercent ?? template.resources.cpuPercent,
@@ -53,15 +40,16 @@ export async function createServer(user: User, input: CreateServerInput) {
     swapMb: input.limits?.swapMb ?? 0,
   };
 
-  // Admission control: don't commit more memory than the node has, or working
-  // sets exceed RAM and the host OOM-killer reaps containers (and the daemon).
+  // Provisioning sanity cap: allow committing up to OVERCOMMIT× the node's RAM
+  // (you can create more servers than fit at once — they run one/few at a time;
+  // the daemon's START-time admission is what actually prevents host OOM).
+  const OVERCOMMIT = Number(process.env.NODE_MEMORY_OVERCOMMIT ?? 8);
   const committed = await db.server.aggregate({ _sum: { memoryMb: true }, where: { nodeId: node.id } });
   const usedMb = committed._sum.memoryMb ?? 0;
-  if (usedMb + limits.memoryMb > node.memoryMb) {
-    const freeGb = Math.max(0, (node.memoryMb - usedMb) / 1024).toFixed(1);
+  if (usedMb + limits.memoryMb > node.memoryMb * OVERCOMMIT) {
     throw new HttpError(
       503,
-      `Not enough free memory on this node (${freeGb} GB free, ${(limits.memoryMb / 1024).toFixed(1)} GB requested). Free up RAM, pick a smaller plan, or add a node.`,
+      `This node's reservation limit is reached (${(usedMb / 1024).toFixed(0)} GB committed, max ${((node.memoryMb * OVERCOMMIT) / 1024).toFixed(0)} GB). Delete an unused server or add a node.`,
     );
   }
 
@@ -73,49 +61,74 @@ export async function createServer(user: User, input: CreateServerInput) {
   }
   const dockerImage = input.dockerImage ?? template.defaultImage;
 
-  // Decide each port number up front (primary first so offsets are relative to it).
   const primarySpec = template.ports.find((p) => p.primary) ?? template.ports[0]!;
-  const primaryPort = pickPort(primarySpec.default);
-  const portPlan = template.ports.map((p) => {
-    if (p === primarySpec) return { spec: p, port: primaryPort };
-    const desired = p.offsetFromPrimary !== undefined ? primaryPort + p.offsetFromPrimary : p.default;
-    return { spec: p, port: pickPort(desired) };
-  });
 
-  const server = await db.server.create({
-    data: {
-      name: input.name.slice(0, 60),
-      ownerId: user.id,
-      nodeId: node.id,
-      templateId: template.id,
-      game: template.game,
-      dockerImage,
-      environment: environment as object,
-      memoryMb: limits.memoryMb,
-      cpuPercent: limits.cpuPercent,
-      diskMb: limits.diskMb,
-      swapMb: limits.swapMb,
-      state: "installing",
-      allocations: {
-        create: portPlan.map(({ spec, port }) => ({
+  // Allocate ports + create the server, retrying on a concurrent port collision:
+  // two creates can pick the same free port and the DB unique key rejects the
+  // loser (P2002) — re-read the used ports and try again instead of 500ing.
+  let server: Prisma.ServerGetPayload<{ include: { allocations: true } }>;
+  for (let attempt = 0; ; attempt++) {
+    const taken = await db.allocation.findMany({ where: { nodeId: node.id }, select: { port: true } });
+    const used = new Set(taken.map((a) => a.port));
+    const pickPort = (desired: number): number => {
+      for (let p = desired; p < desired + 2000; p++) {
+        if (!used.has(p)) {
+          used.add(p);
+          return p;
+        }
+      }
+      throw new HttpError(503, "No free ports available on the node.");
+    };
+    const primaryPort = pickPort(primarySpec.default);
+    const portPlan = template.ports.map((p) => {
+      if (p === primarySpec) return { spec: p, port: primaryPort };
+      const desired = p.offsetFromPrimary !== undefined ? primaryPort + p.offsetFromPrimary : p.default;
+      return { spec: p, port: pickPort(desired) };
+    });
+    try {
+      server = await db.server.create({
+        data: {
+          name: input.name.slice(0, 60),
+          ownerId: user.id,
           nodeId: node.id,
-          ip: node.publicIp,
-          port,
-          protocol: protoFor(spec.protocol),
-          role: spec.name,
-          primary: !!spec.primary || spec === primarySpec,
-        })),
-      },
-    },
-    include: { allocations: true },
-  });
+          templateId: template.id,
+          game: template.game,
+          dockerImage,
+          environment: environment as object,
+          memoryMb: limits.memoryMb,
+          cpuPercent: limits.cpuPercent,
+          diskMb: limits.diskMb,
+          swapMb: limits.swapMb,
+          state: "installing",
+          allocations: {
+            create: portPlan.map(({ spec, port }) => ({
+              nodeId: node.id,
+              ip: node.publicIp,
+              port,
+              protocol: protoFor(spec.protocol),
+              role: spec.name,
+              primary: !!spec.primary || spec === primarySpec,
+            })),
+          },
+        },
+        include: { allocations: true },
+      });
+      break;
+    } catch (e: any) {
+      if (e?.code === "P2002" && attempt < 4) continue; // port race — re-read & retry
+      throw e;
+    }
+  }
 
   // Hand the build spec to the daemon (async install/pull happens there).
   const spec = buildServerSpec(server, server.allocations);
   try {
     await new DaemonClient(node).registerServer(spec);
   } catch (e: any) {
-    // Roll back the DB rows if the node refused the build.
+    // Roll back: purge any partially-created container/volume on the node first
+    // (a lost response / mid-build failure can leave an orphan holding ports),
+    // then remove the DB rows.
+    await new DaemonClient(node).destroy(server.id, true).catch(() => {});
     await db.server.delete({ where: { id: server.id } }).catch(() => {});
     throw new HttpError(502, `Node could not provision the server: ${e?.message ?? "unknown error"}`);
   }
