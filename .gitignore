@@ -25,10 +25,11 @@ logs/
 *.log
 npm-debug.log*
 
-# Data / runtime
-data/
-volumes/
-backups/
+# Data / runtime (root-level only — anchored so they don't match source dirs of
+# the same name, e.g. api/.../servers/[id]/backups/)
+/data/
+/volumes/
+/backups/
 /var/
 
 # Prisma
