@@ -241,6 +241,19 @@ export function createHttpApp() {
     }),
   );
 
+  // Branch a new server from a source server's backup: extract the SOURCE's
+  // backup archive into THIS (target) server's volume. Used by the panel clone
+  // flow. The target volume dir already exists (the server was just provisioned).
+  const cloneFromSchema = z.object({ sourceServerId: z.string().min(1), backupId: z.string().min(1) });
+  app.post(
+    "/api/servers/:id/clone-from",
+    wrap(async (req, res) => {
+      const { sourceServerId, backupId } = cloneFromSchema.parse(req.body);
+      await backups.cloneFromBackup(sourceServerId, backupId, req.params.id!);
+      res.status(204).end();
+    }),
+  );
+
   app.delete(
     "/api/servers/:id/backups/:backupId",
     wrap(async (req, res) => {

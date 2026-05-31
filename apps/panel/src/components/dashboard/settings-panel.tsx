@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { Save, Loader2, Trash2 } from "lucide-react";
 import { api } from "@/lib/client";
 import { UpgradeCard } from "./upgrade-card";
+import { CloneCard } from "./clone-card";
+import { PublishBlueprintCard } from "./publish-blueprint-card";
 
 interface Var {
   key: string;
@@ -133,6 +135,8 @@ export function SettingsPanel({
       )}
 
       {detail.isOwner && <UpgradeCard id={id} canUpgrade={canStartup} />}
+      {detail.isOwner && <CloneCard id={id} />}
+      {detail.isOwner && <PublishBlueprintCard id={id} server={detail.server} />}
 
       {detail.isOwner && (
         <div className="rounded-2xl border border-danger/30 bg-danger/5 p-5">

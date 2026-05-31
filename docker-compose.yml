@@ -57,6 +57,9 @@ services:
       # billing API returns 503 "Payments not configured" and no card UI appears.
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      # AI Server Copilot (optional). Dormant when unset: the copilot falls back
+      # to a deterministic rule-based helper instead of the Anthropic API.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     # Not published to the host — Caddy reaches the panel over the internal
     # network. This keeps the panel off 0.0.0.0 and forces traffic through TLS.
     expose:

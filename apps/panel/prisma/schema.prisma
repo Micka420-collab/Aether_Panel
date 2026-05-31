@@ -60,6 +60,7 @@ model User {
   wakeLinks    WakeLink[]
   transactions Transaction[]
   webhooks     Webhook[]
+  blueprints   Blueprint[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -399,4 +400,27 @@ model Plan {
   sort         Int     @default(0)
 
   createdAt DateTime @default(now())
+}
+
+// Blueprint Marketplace: a shareable snapshot of a server's setup that anyone
+// can deploy as a new server in one click.
+model Blueprint {
+  id          String  @id @default(cuid())
+  ownerId     String
+  owner       User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  icon        String  @default("🧩")
+  game        String
+  templateId  String
+  variables   Json    @default("{}")
+  modpack     String?
+  planSlug    String?
+  tags        Json    @default("[]")
+  public      Boolean @default(true)
+  deploys     Int     @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([ownerId])
+  @@index([public])
 }

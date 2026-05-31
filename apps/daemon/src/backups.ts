@@ -153,6 +153,64 @@ export async function deleteBackup(serverId: string, backupId: string): Promise<
 }
 
 /**
+ * Branch a NEW server from a SOURCE server's backup: extract the source's
+ * `backupId` archive into the TARGET server's volume. Same crash-safe swap as
+ * restoreBackup (extract into a temp sibling, then atomic rename), but the
+ * source and destination are different servers. Re-hydrates the archive from S3
+ * if the local copy is gone. Preserves the TARGET's freshly-provisioned
+ * `.aether/` spec dir if the archive doesn't carry one.
+ */
+export async function cloneFromBackup(
+  sourceServerId: string,
+  backupId: string,
+  targetServerId: string,
+): Promise<void> {
+  // Locate the source backup archive (local, else re-hydrate from S3).
+  const file = backupFile(sourceServerId, backupId);
+  const haveLocal = await fs.access(file).then(() => true).catch(() => false);
+  if (!haveLocal) {
+    if (
+      !(s3Enabled() && (await downloadFromS3(backupKey(sourceServerId, backupId), file).catch(() => false)))
+    ) {
+      throw new Error("source backup archive not found (local or S3)");
+    }
+  }
+
+  const dest = hostVolumePath(targetServerId);
+  const exists = (p: string) => fs.access(p).then(() => true).catch(() => false);
+  const tmp = `${dest}.clone-${process.pid}`;
+  const old = `${dest}.old-${process.pid}`;
+  await fs.rm(tmp, { recursive: true, force: true }).catch(() => {});
+  await fs.mkdir(tmp, { recursive: true });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const rs = createReadStream(file);
+      const gunzip = zlib.createGunzip();
+      const extract = tar.extract(tmp);
+      rs.on("error", reject);
+      gunzip.on("error", reject);
+      extract.on("error", reject);
+      extract.on("finish", () => resolve());
+      rs.pipe(gunzip).pipe(extract);
+    });
+
+    // Keep the target's own daemon spec dir if the archive didn't include one,
+    // so the clone stays manageable after a restart.
+    if (!(await exists(path.join(tmp, ".aether"))) && (await exists(path.join(dest, ".aether")))) {
+      await fs.cp(path.join(dest, ".aether"), path.join(tmp, ".aether"), { recursive: true });
+    }
+
+    await fs.mkdir(dest, { recursive: true });
+    await fs.rename(dest, old);
+    await fs.rename(tmp, dest);
+    await fs.rm(old, { recursive: true, force: true }).catch(() => {});
+  } catch (e) {
+    await fs.rm(tmp, { recursive: true, force: true }).catch(() => {});
+    throw e;
+  }
+}
+
+/**
  * Stream a backup's bytes. Prefers the local .tar.gz; if it's missing but an
  * off-site copy exists, streams straight from S3 without re-hydrating to disk.
  */

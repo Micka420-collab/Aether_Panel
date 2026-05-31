@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Play, Square, RotateCw, Zap, Copy, Check, Cpu, MemoryStick, HardDrive, Users, Clock,
-  Terminal, FolderOpen, SlidersHorizontal, Archive, Network, ArrowLeft, Loader2, Package, CalendarClock, Users2, Palette, Activity, Map,
+  Terminal, FolderOpen, SlidersHorizontal, Archive, Network, ArrowLeft, Loader2, Package, CalendarClock, Users2, Palette, Activity, Map, Sparkles, Share2, Stethoscope,
 } from "lucide-react";
 import { useServerSocket } from "@/lib/use-server-socket";
 import { api } from "@/lib/client";
@@ -21,8 +21,11 @@ import { AppearancePanel } from "./appearance-panel";
 import { PlayersPanel } from "./players-panel";
 import { MetricsPanel } from "./metrics-panel";
 import { MapPanel } from "./map-panel";
+import { AssistantPanel } from "./assistant-panel";
+import { VelocityPanel } from "./velocity-panel";
+import { ModDoctorPanel } from "./mod-doctor-panel";
 
-type Tab = "console" | "files" | "players" | "appearance" | "stats" | "map" | "mods" | "schedules" | "settings" | "backups" | "network" | "subusers";
+type Tab = "console" | "assistant" | "files" | "players" | "appearance" | "stats" | "map" | "mods" | "mod-doctor" | "schedules" | "settings" | "backups" | "network" | "network-proxy" | "subusers";
 
 export function ServerDetail({ id }: { id: string }) {
   const [detail, setDetail] = useState<any>(null);
@@ -82,16 +85,19 @@ export function ServerDetail({ id }: { id: string }) {
 
   const tabs: { key: Tab; label: string; icon: any; show: boolean }[] = [
     { key: "console", label: "Console", icon: Terminal, show: true },
+    { key: "assistant", label: "Copilot", icon: Sparkles, show: can("control.console") },
     { key: "players", label: "Players", icon: Users2, show: s.game === "minecraft" && can("control.command") },
     { key: "files", label: "Files", icon: FolderOpen, show: can("file.read") },
     { key: "appearance", label: "Appearance", icon: Palette, show: s.game === "minecraft" && can("file.read") },
     { key: "stats", label: "Stats", icon: Activity, show: can("control.console") },
     { key: "map", label: "Map", icon: Map, show: s.game === "minecraft" && can("startup.read") },
     { key: "mods", label: "Content", icon: Package, show: supportsContent && can("startup.read") },
+    { key: "mod-doctor", label: "Mod Doctor", icon: Stethoscope, show: s.game === "minecraft" && can("startup.read") },
     { key: "schedules", label: "Schedules", icon: CalendarClock, show: can("schedule.read") },
     { key: "settings", label: "Settings", icon: SlidersHorizontal, show: can("startup.read") || can("settings.rename") },
     { key: "backups", label: "Backups", icon: Archive, show: can("backup.read") },
     { key: "network", label: "Network", icon: Network, show: can("allocation.read") },
+    { key: "network-proxy", label: "Proxy", icon: Share2, show: (s.templateId === "velocity-proxy" || s.game === "velocity") && can("startup.read") },
     { key: "subusers", label: "Sub-users", icon: Users2, show: detail.isOwner },
   ];
 
@@ -175,16 +181,19 @@ export function ServerDetail({ id }: { id: string }) {
 
       <div className="mt-5">
         {tab === "console" && <ConsolePanel socket={socket} canCommand={can("control.command")} />}
+        {tab === "assistant" && <AssistantPanel id={id} detail={detail} />}
         {tab === "players" && <PlayersPanel id={id} canManage={can("players.manage")} />}
         {tab === "files" && <FilesPanel id={id} canWrite={can("file.write")} canDelete={can("file.delete")} />}
         {tab === "appearance" && <AppearancePanel id={id} canWrite={can("file.write")} />}
         {tab === "stats" && <MetricsPanel id={id} />}
         {tab === "map" && <MapPanel id={id} detail={detail} />}
         {tab === "mods" && <ModsPanel id={id} canManage={can("startup.update")} />}
+        {tab === "mod-doctor" && <ModDoctorPanel id={id} canFix={can("file.write")} />}
         {tab === "schedules" && <SchedulesPanel id={id} canManage={can("schedule.update")} />}
         {tab === "settings" && <SettingsPanel id={id} detail={detail} onSaved={load} canRename={can("settings.rename")} canStartup={can("startup.update")} />}
         {tab === "backups" && <BackupsPanel id={id} canCreate={can("backup.create")} canDelete={can("backup.delete")} canRestore={can("backup.restore")} />}
         {tab === "network" && <NetworkPanel detail={detail} isOwner={detail.isOwner} id={id} onChanged={load} />}
+        {tab === "network-proxy" && <VelocityPanel id={id} canManage={can("startup.update")} />}
         {tab === "subusers" && <SubusersPanel id={id} />}
       </div>
     </div>

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { Server, Settings, ShieldAlert, LogOut, Menu, X, BookOpen, Plus, CreditCard } from "lucide-react";
+import { Server, Settings, ShieldAlert, LogOut, Menu, X, BookOpen, Plus, CreditCard, Blocks } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { AmbientBackground } from "@/components/ambient";
 import { cn } from "@/lib/util";
@@ -22,6 +22,7 @@ export function DashboardShell({ user, children }: { user: ShellUser; children: 
 
   const nav = [
     { href: "/dashboard", label: "Servers", icon: Server, exact: true },
+    { href: "/dashboard/blueprints", label: "Blueprints", icon: Blocks },
     { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
     { href: "/dashboard/account", label: "Account", icon: Settings },
     ...(user.role === "ADMIN" ? [{ href: "/dashboard/admin", label: "Admin", icon: ShieldAlert }] : []),
