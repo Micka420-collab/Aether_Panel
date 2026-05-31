@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="Inter, system-ui, sans-serif" width="1280" height="720">
+  <defs>
+    <linearGradient id="cv" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#22B8D8"/><stop offset="100%" stop-color="#7C5CFF"/></linearGradient>
+    <radialGradient id="orb" cx="50%" cy="0%" r="80%"><stop offset="0%" stop-color="#7C5CFF" stop-opacity="0.12"/><stop offset="60%" stop-color="#07090F" stop-opacity="0"/></radialGradient>
+  </defs>
+
+  <!-- backdrop -->
+  <rect width="1280" height="720" fill="#07090F"/>
+  <rect width="1280" height="720" fill="url(#orb)"/>
+
+  <!-- sidebar -->
+  <rect x="0" y="0" width="248" height="720" fill="#0A0E18"/>
+  <line x1="248" y1="0" x2="248" y2="720" stroke="#ffffff" stroke-opacity="0.07"/>
+  <rect x="24" y="26" width="26" height="26" rx="7" fill="#0E1422"/>
+  <path d="M37 31 L46 50 H41 L37 40 L33 50 H28 Z" fill="url(#cv)"/>
+  <text x="60" y="44" fill="#fff" font-size="17" font-weight="600">Aether</text>
+  <rect x="24" y="70" width="200" height="40" rx="11" fill="url(#cv)"/>
+  <text x="124" y="95" fill="#fff" font-size="13.5" font-weight="600" text-anchor="middle">+  New server</text>
+  <text x="44" y="155" fill="#9aa6b8" font-size="13.5">▣  Servers</text>
+  <rect x="20" y="174" width="208" height="40" rx="11" fill="#ffffff" fill-opacity="0.10"/>
+  <text x="44" y="199" fill="#fff" font-size="13.5">🧩  Blueprints</text>
+  <text x="44" y="239" fill="#9aa6b8" font-size="13.5">💳  Billing</text>
+  <text x="44" y="279" fill="#9aa6b8" font-size="13.5">⚙  Account</text>
+  <text x="44" y="319" fill="#9aa6b8" font-size="13.5">🛡  Admin</text>
+  <text x="44" y="359" fill="#9aa6b8" font-size="13.5">📖  Docs</text>
+  <rect x="20" y="636" width="208" height="62" rx="13" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.08"/>
+  <circle cx="48" cy="667" r="16" fill="url(#cv)"/>
+  <text x="48" y="672" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">MD</text>
+  <text x="74" y="662" fill="#fff" font-size="12.5" font-weight="600">micka</text>
+  <text x="74" y="679" fill="#7a8699" font-size="11">micka@aether.host</text>
+
+  <!-- page header -->
+  <text x="288" y="48" fill="#fff" font-size="22" font-weight="700">Blueprint marketplace</text>
+  <text x="464" y="48" fill="#7a8699" font-size="14">— deploy a perfectly-configured server in one click</text>
+  <rect x="288" y="68" width="700" height="42" rx="12" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.09"/>
+  <text x="310" y="94" fill="#5d6b7e" font-size="14">🔍</text>
+  <text x="338" y="94" fill="#7a8699" font-size="13.5">Search blueprints — modpacks, proxies, networks…</text>
+  <rect x="1000" y="68" width="120" height="42" rx="12" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.09"/>
+  <text x="1060" y="94" fill="#9aa6b8" font-size="13" text-anchor="middle">⚙ Filters</text>
+  <rect x="1132" y="68" width="124" height="42" rx="12" fill="url(#cv)"/>
+  <text x="1194" y="94" fill="#fff" font-size="13" font-weight="600" text-anchor="middle">＋ Submit</text>
+
+  <!-- blueprint cards grid (3 cols x 2 rows) -->
+  <g>
+    <rect x="288" y="132" width="312" height="268" rx="16" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.09"/>
+    <rect x="312" y="156" width="58" height="58" rx="14" fill="#0E1422" stroke="#ffffff" stroke-opacity="0.08"/>
+    <text x="341" y="196" font-size="28" text-anchor="middle">⚙️</text>
+    <text x="386" y="178" fill="#fff" font-size="16" font-weight="700">Create: Above &amp; Beyond</text>
+    <text x="386" y="200" fill="#7a8699" font-size="11.5">Forge 1.18 · tech &amp; automation</text>
+    <text x="312" y="244" fill="#9aa6b8" font-size="12.5">Industrial questline modpack with deep</text>
+    <text x="312" y="262" fill="#9aa6b8" font-size="12.5">machinery progression and logistics.</text>
+    <rect x="312" y="284" width="60" height="22" rx="11" fill="#22B8D8" fill-opacity="0.12" stroke="#22B8D8" stroke-opacity="0.3"/>
+    <text x="342" y="299" fill="#8FE3F2" font-size="11" text-anchor="middle">Forge</text>
+    <rect x="380" y="284" width="50" height="22" rx="11" fill="#7C5CFF" fill-opacity="0.14" stroke="#7C5CFF" stroke-opacity="0.35"/>
+    <text x="405" y="299" fill="#b8a8ff" font-size="11" text-anchor="middle">Tech</text>
+    <rect x="438" y="284" width="62" height="22" rx="11" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
+    <text x="469" y="299" fill="#9aa6b8" font-size="11" text-anchor="middle">Quests</text>
+    <line x1="312" y1="330" x2="576" y2="330" stroke="#ffffff" stroke-opacity="0.07"/>
+    <text x="312" y="362" fill="#7a8699" font-size="12">1.2k ↓</text>
+    <rect x="446" y="344" width="130" height="36" rx="10" fill="url(#cv)"/>
+    <text x="511" y="367" fill="#fff" font-size="13" font-weight="600" text-anchor="middle">Deploy</text>
+  </g>
+  <g>
+    <rect x="616" y="132" width="312" height="268" rx="16" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.09"/>
+    <rect x="640" y="156" width="58" height="58" rx="14" fill="#0E1422" stroke="#ffffff" stroke-opacity="0.08"/>
+    <text x="669" y="196" font-size="28" text-anchor="middle">🌿</text>
+    <text x="714" y="178" fill="#fff" font-size="16" font-weight="700">Vanilla+ SMP</text>
+    <text x="714" y="200" fill="#7a8699" font-size="11.5">Paper 1.21 · survival multiplayer</text>
+    <text x="640" y="244" fill="#9aa6b8" font-size="12.5">Pure survival feel with quality-of-life</text>
+    <text x="640" y="262" fill="#9aa6b8" font-size="12.5">plugins, land claims and economy.</text>
+    <rect x="640" y="284" width="58" height="22" rx="11" fill="#22B8D8" fill-opacity="0.12" stroke="#22B8D8" stroke-opacity="0.3"/>
+    <text x="669" y="299" fill="#8FE3F2" font-size="11" text-anchor="middle">Paper</text>
+    <rect x="706" y="284" width="72" height="22" rx="11" fill="#34D399" fill-opacity="0.12" stroke="#34D399" stroke-opacity="0.35"/>
+    <text x="742" y="299" fill="#34D399" font-size="11" text-anchor="middle">Survival</text>
+    <rect x="786" y="284" width="56" height="22" rx="11" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
+    <text x="814" y="299" fill="#9aa6b8" font-size="11" text-anchor="middle">QoL</text>
+    <line x1="640" y1="330" x2="904" y2="330" stroke="#ffffff" stroke-opacity="0.07"/>
+    <text x="640" y="362" fill="#7a8699" font-size="12">3.8k ↓</text>
+    <rect x="774" y="344" width="130" height="36" rx="10" fill="url(#cv)"/>
+    <text x="839" y="367" fill="#fff" font-size="13" font-weight="600" text-anchor="middle">Deploy</text>
+  </g>
+  <g>
+    <rect x="944" y="132" width="312" height="268" rx="16" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.09"/>
+    <rect x="968" y="156" width="58" height="58" rx="14" fill="#0E1422" stroke="#ffffff" stroke-opacity="0.08"/>
+    <text x="997" y="196" font-size="28" text-anchor="middle">⚡</text>
+    <text x="1042" y="178" fill="#fff" font-size="16" font-weight="700">Fabulously Optimized</text>
+    <text x="1042" y="200" fill="#7a8699" font-size="11.5">Fabric 1.21 · performance pack</text>
+    <text x="968" y="244" fill="#9aa6b8" font-size="12.5">Sodium-powered FPS boost, shaders</text>
+    <text x="968" y="262" fill="#9aa6b8" font-size="12.5">ready, vanilla-faithful and snappy.</text>
+    <rect x="968" y="284" width="62" height="22" rx="11" fill="#22B8D8" fill-opacity="0.12" stroke="#22B8D8" stroke-opacity="0.3"/>
+    <text x="999" y="299" fill="#8FE3F2" font-size="11" text-anchor="middle">Fabric</text>
+    <rect x="1038" y="284" width="50" height="22" rx="11" fill="#FBBF24" fill-opacity="0.12" stroke="#FBBF24" stroke-opacity="0.35"/>
+    <text x="1063" y="299" fill="#FBBF24" font-size="11" text-anchor="middle">Fast</text>
+    <rect x="1096" y="284" width="68" height="22" rx="11" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
+    <text x="1130" y="299" fill="#9aa6b8" font-size="11" text-anchor="middle">Shaders</text>
+    <line x1="968" y1="330" x2="1232" y2="330" stroke="#ffffff" stroke-opacity="0.07"/>
+    <text x="968" y="362" fill="#7a8699" font-size="12">9.4k ↓</text>
+    <rect x="1102" y="344" width="130" height="36" rx="10" fill="url(#cv)"/>
+    <text x="1167" y="367" fill="#fff" font-size="13" font-weight="600" text-anchor="middle">Deploy</text>
+  </g>
+  <g>
+    <rect x="288" y="416" width="312" height="268" rx="16" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.09"/>
+    <rect x="312" y="440" width="58" height="58" rx="14" fill="#0E1422" stroke="#ffffff" stroke-opacity="0.08"/>
+    <text x="341" y="480" font-size="28" text-anchor="middle">🐉</text>
+    <text x="386" y="462" fill="#fff" font-size="16" font-weight="700">Pixelmon</text>
+    <text x="386" y="484" fill="#7a8699" font-size="11.5">Forge 1.16 · creature collector</text>
+    <text x="312" y="528" fill="#9aa6b8" font-size="12.5">Catch, train and battle 900+ creatures</text>
+    <text x="312" y="546" fill="#9aa6b8" font-size="12.5">in a fully-featured adventure world.</text>
+    <rect x="312" y="568" width="60" height="22" rx="11" fill="#22B8D8" fill-opacity="0.12" stroke="#22B8D8" stroke-opacity="0.3"/>
+    <text x="342" y="583" fill="#8FE3F2" font-size="11" text-anchor="middle">Forge</text>
+    <rect x="380" y="568" width="56" height="22" rx="11" fill="#F85149" fill-opacity="0.12" stroke="#F85149" stroke-opacity="0.35"/>
+    <text x="408" y="583" fill="#F85149" font-size="11" text-anchor="middle">Battle</text>
+    <rect x="444" y="568" width="50" height="22" rx="11" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
+    <text x="469" y="583" fill="#9aa6b8" font-size="11" text-anchor="middle">RPG</text>
+    <line x1="312" y1="614" x2="576" y2="614" stroke="#ffffff" stroke-opacity="0.07"/>
+    <text x="312" y="646" fill="#7a8699" font-size="12">6.1k ↓</text>
+    <rect x="446" y="628" width="130" height="36" rx="10" fill="url(#cv)"/>
+    <text x="511" y="651" fill="#fff" font-size="13" font-weight="600" text-anchor="middle">Deploy</text>
+  </g>
+  <g>
+    <rect x="616" y="416" width="312" height="268" rx="16" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.09"/>
+    <rect x="640" y="440" width="58" height="58" rx="14" fill="#0E1422" stroke="#ffffff" stroke-opacity="0.08"/>
+    <text x="669" y="480" font-size="28" text-anchor="middle">🗡️</text>
+    <text x="714" y="462" fill="#fff" font-size="16" font-weight="700">RLCraft</text>
+    <text x="714" y="484" fill="#7a8699" font-size="11.5">Forge 1.12 · hardcore survival</text>
+    <text x="640" y="528" fill="#9aa6b8" font-size="12.5">Brutal realism overhaul — thirst, temp,</text>
+    <text x="640" y="546" fill="#9aa6b8" font-size="12.5">dragons and permadeath challenge.</text>
+    <rect x="640" y="568" width="60" height="22" rx="11" fill="#22B8D8" fill-opacity="0.12" stroke="#22B8D8" stroke-opacity="0.3"/>
+    <text x="670" y="583" fill="#8FE3F2" font-size="11" text-anchor="middle">Forge</text>
+    <rect x="708" y="568" width="74" height="22" rx="11" fill="#F85149" fill-opacity="0.12" stroke="#F85149" stroke-opacity="0.35"/>
+    <text x="745" y="583" fill="#F85149" font-size="11" text-anchor="middle">Hardcore</text>
+    <rect x="790" y="568" width="62" height="22" rx="11" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
+    <text x="821" y="583" fill="#9aa6b8" font-size="11" text-anchor="middle">Dragons</text>
+    <line x1="640" y1="614" x2="904" y2="614" stroke="#ffffff" stroke-opacity="0.07"/>
+    <text x="640" y="646" fill="#7a8699" font-size="12">12.7k ↓</text>
+    <rect x="774" y="628" width="130" height="36" rx="10" fill="url(#cv)"/>
+    <text x="839" y="651" fill="#fff" font-size="13" font-weight="600" text-anchor="middle">Deploy</text>
+  </g>
+  <g>
+    <rect x="944" y="416" width="312" height="268" rx="16" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.09"/>
+    <rect x="968" y="440" width="58" height="58" rx="14" fill="#0E1422" stroke="#ffffff" stroke-opacity="0.08"/>
+    <text x="997" y="480" font-size="28" text-anchor="middle">🏰</text>
+    <text x="1042" y="462" fill="#fff" font-size="16" font-weight="700">Lobby Network</text>
+    <text x="1042" y="484" fill="#7a8699" font-size="11.5">Velocity · multi-server proxy</text>
+    <text x="968" y="528" fill="#9aa6b8" font-size="12.5">Pre-wired hub + minigame backends</text>
+    <text x="968" y="546" fill="#9aa6b8" font-size="12.5">behind one Velocity proxy gateway.</text>
+    <rect x="968" y="568" width="72" height="22" rx="11" fill="#7C5CFF" fill-opacity="0.14" stroke="#7C5CFF" stroke-opacity="0.35"/>
+    <text x="1004" y="583" fill="#b8a8ff" font-size="11" text-anchor="middle">Velocity</text>
+    <rect x="1048" y="568" width="56" height="22" rx="11" fill="#22B8D8" fill-opacity="0.12" stroke="#22B8D8" stroke-opacity="0.3"/>
+    <text x="1076" y="583" fill="#8FE3F2" font-size="11" text-anchor="middle">Proxy</text>
+    <rect x="1112" y="568" width="62" height="22" rx="11" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
+    <text x="1143" y="583" fill="#9aa6b8" font-size="11" text-anchor="middle">Network</text>
+    <line x1="968" y1="614" x2="1232" y2="614" stroke="#ffffff" stroke-opacity="0.07"/>
+    <text x="968" y="646" fill="#7a8699" font-size="12">2.3k ↓</text>
+    <rect x="1102" y="628" width="130" height="36" rx="10" fill="url(#cv)"/>
+    <text x="1167" y="651" fill="#fff" font-size="13" font-weight="600" text-anchor="middle">Deploy</text>
+  </g>
+</svg>

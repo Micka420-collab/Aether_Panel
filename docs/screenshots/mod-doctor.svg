@@ -84,43 +84,74 @@
 
   <!-- tabs -->
   <g font-size="13">
-    <text x="290" y="300" fill="#fff" font-weight="600">▸ Console</text>
-    <text x="372" y="300" fill="#7a8699">Copilot</text>
-    <text x="442" y="300" fill="#7a8699">Stats</text>
-    <text x="498" y="300" fill="#7a8699">Content</text>
-    <text x="566" y="300" fill="#7a8699">Mod Doctor</text>
-    <text x="660" y="300" fill="#7a8699">Backups</text>
-    <text x="734" y="300" fill="#7a8699">Network</text>
-    <text x="806" y="300" fill="#7a8699">Proxy</text>
-    <rect x="288" y="312" width="74" height="2.5" rx="1" fill="#22B8D8"/>
+    <text x="290" y="300" fill="#7a8699">Console</text>
+    <text x="364" y="300" fill="#7a8699">Copilot</text>
+    <text x="438" y="300" fill="#7a8699">Stats</text>
+    <text x="494" y="300" fill="#7a8699">Content</text>
+    <text x="568" y="300" fill="#fff" font-weight="600">Mod Doctor</text>
+    <text x="676" y="300" fill="#7a8699">Backups</text>
+    <text x="748" y="300" fill="#7a8699">Network</text>
+    <text x="820" y="300" fill="#7a8699">Proxy</text>
+    <rect x="566" y="312" width="96" height="2.5" rx="1" fill="#22B8D8"/>
     <line x1="288" y1="313" x2="1256" y2="313" stroke="#ffffff" stroke-opacity="0.07"/>
   </g>
 
-  <!-- console panel -->
+  <!-- mod doctor panel -->
   <rect x="288" y="332" width="968" height="360" rx="14" fill="#ffffff" fill-opacity="0.03" stroke="#ffffff" stroke-opacity="0.08"/>
-  <rect x="288" y="332" width="968" height="40" rx="14" fill="#ffffff" fill-opacity="0.03"/>
-  <circle cx="316" cy="352" r="5" fill="#34D399"/>
-  <text x="332" y="357" fill="#8b95a7" font-size="11.5" font-family="ui-monospace, monospace">● Live</text>
-  <text x="1230" y="357" fill="#7a8699" font-size="11.5" text-anchor="end">🗑 Clear</text>
-  <!-- console body -->
-  <rect x="289" y="372" width="966" height="276" fill="#0b0e14"/>
-  <g font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="12.5">
-    <text x="306" y="395" fill="#58A6FF">[Aether] Booting Survival SMP…</text>
-    <text x="306" y="414" fill="#C9D1D9">[12:04:18] [Server thread/INFO]: Starting minecraft server version 1.21.4</text>
-    <text x="306" y="433" fill="#C9D1D9">[12:04:18] [Server thread/INFO]: Loading properties</text>
-    <text x="306" y="452" fill="#C9D1D9">[12:04:19] [Server thread/INFO]: Default game type: SURVIVAL</text>
-    <text x="306" y="471" fill="#C9D1D9">[12:04:21] [Server thread/INFO]: Preparing level "world"</text>
-    <text x="306" y="490" fill="#C9D1D9">[12:04:23] [Server thread/INFO]: Preparing spawn area: 92%</text>
-    <text x="306" y="509" fill="#34D399">[12:04:24] [Server thread/INFO]: Done (5.812s)! For help, type "help"</text>
-    <text x="306" y="528" fill="#C9D1D9">[12:06:02] [Server thread/INFO]: <tspan fill="#8FE3F2">Steve</tspan> joined the game</text>
-    <text x="306" y="547" fill="#C9D1D9">[12:06:48] [Server thread/INFO]: <tspan fill="#8FE3F2">Alex</tspan> joined the game</text>
-    <text x="306" y="566" fill="#9aa6b8">&lt;Steve&gt; anyone near spawn? building a shop</text>
-    <text x="306" y="585" fill="#34D399">[12:07:31] [Server thread/INFO]: Saved the game</text>
-  </g>
-  <!-- input row -->
-  <line x1="289" y1="612" x2="1255" y2="612" stroke="#ffffff" stroke-opacity="0.07"/>
-  <text x="306" y="634" fill="#22B8D8" font-family="ui-monospace, monospace" font-size="13">›</text>
-  <text x="322" y="634" fill="#7a8699" font-family="ui-monospace, monospace" font-size="12.5">Type a command and press Enter…</text>
-  <rect x="1180" y="620" width="60" height="28" rx="8" fill="url(#cv)" opacity="0.9"/>
-  <text x="1210" y="638" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">Send</text>
+
+  <!-- panel header -->
+  <text x="312" y="364" fill="#fff" font-size="15" font-weight="700">🩺 Mod Doctor</text>
+  <text x="312" y="384" fill="#7a8699" font-size="11.5">Scanned 42 mods · 1.21 Fabric · just now</text>
+  <!-- rescan button -->
+  <rect x="1140" y="348" width="96" height="34" rx="10" fill="url(#cv)"/>
+  <text x="1188" y="370" fill="#fff" font-size="12.5" font-weight="600" text-anchor="middle">⟳ Rescan</text>
+
+  <!-- summary line -->
+  <rect x="312" y="400" width="920" height="38" rx="10" fill="#0E1422" stroke="#ffffff" stroke-opacity="0.06"/>
+  <circle cx="332" cy="419" r="5" fill="#F85149"/>
+  <text x="346" y="424" fill="#C9D1D9" font-size="12.5" font-family="ui-monospace, 'JetBrains Mono', monospace">3 issues</text>
+  <text x="424" y="424" fill="#5d6b7e" font-size="12.5">·</text>
+  <text x="438" y="424" fill="#F85149" font-size="12.5" font-weight="600">1 error</text>
+  <text x="500" y="424" fill="#5d6b7e" font-size="12.5">·</text>
+  <text x="514" y="424" fill="#FBBF24" font-size="12.5" font-weight="600">2 warnings</text>
+  <text x="1216" y="424" fill="#5d6b7e" font-size="11.5" text-anchor="end">Sorted by severity</text>
+
+  <!-- row 1 : error -->
+  <rect x="312" y="448" width="920" height="50" rx="10" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.07"/>
+  <rect x="324" y="464" width="54" height="20" rx="6" fill="#F85149" fill-opacity="0.16" stroke="#F85149" stroke-opacity="0.45"/>
+  <text x="351" y="478" fill="#F85149" font-size="10.5" font-weight="700" text-anchor="middle">error</text>
+  <text x="392" y="470" fill="#fff" font-size="12.5" font-family="ui-monospace, 'JetBrains Mono', monospace">create-forge-6.0.jar</text>
+  <text x="392" y="488" fill="#9aa6b8" font-size="11.5">Forge mod on a Fabric server — incompatible loader</text>
+  <rect x="1112" y="463" width="104" height="28" rx="9" fill="#F85149" fill-opacity="0.14" stroke="#F85149" stroke-opacity="0.4"/>
+  <text x="1164" y="481" fill="#F85149" font-size="11.5" font-weight="600" text-anchor="middle">Quarantine</text>
+
+  <!-- row 2 : warn -->
+  <rect x="312" y="506" width="920" height="50" rx="10" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.07"/>
+  <rect x="324" y="522" width="54" height="20" rx="6" fill="#FBBF24" fill-opacity="0.16" stroke="#FBBF24" stroke-opacity="0.45"/>
+  <text x="351" y="536" fill="#FBBF24" font-size="10.5" font-weight="700" text-anchor="middle">warn</text>
+  <text x="392" y="528" fill="#fff" font-size="12.5" font-family="ui-monospace, 'JetBrains Mono', monospace">jei-1.21-dup.jar</text>
+  <text x="392" y="546" fill="#9aa6b8" font-size="11.5">Duplicate of jei-1.21.jar — older version will be loaded</text>
+  <rect x="1112" y="521" width="104" height="28" rx="9" fill="#FBBF24" fill-opacity="0.13" stroke="#FBBF24" stroke-opacity="0.4"/>
+  <text x="1164" y="539" fill="#FBBF24" font-size="11.5" font-weight="600" text-anchor="middle">Quarantine</text>
+
+  <!-- row 3 : warn -->
+  <rect x="312" y="564" width="920" height="50" rx="10" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.07"/>
+  <rect x="324" y="580" width="54" height="20" rx="6" fill="#FBBF24" fill-opacity="0.16" stroke="#FBBF24" stroke-opacity="0.45"/>
+  <text x="351" y="594" fill="#FBBF24" font-size="10.5" font-weight="700" text-anchor="middle">warn</text>
+  <text x="392" y="586" fill="#fff" font-size="12.5" font-family="ui-monospace, 'JetBrains Mono', monospace">OptiFine_1.21.jar</text>
+  <text x="392" y="604" fill="#9aa6b8" font-size="11.5">Client-only mod (OptiFine) on a server — will not load</text>
+  <rect x="1112" y="579" width="104" height="28" rx="9" fill="#34D399" fill-opacity="0.13" stroke="#34D399" stroke-opacity="0.4"/>
+  <text x="1164" y="597" fill="#34D399" font-size="11.5" font-weight="600" text-anchor="middle">↺ Restore</text>
+
+  <!-- row 4 : info -->
+  <rect x="312" y="622" width="920" height="50" rx="10" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.07"/>
+  <rect x="324" y="638" width="54" height="20" rx="6" fill="#58A6FF" fill-opacity="0.16" stroke="#58A6FF" stroke-opacity="0.45"/>
+  <text x="351" y="652" fill="#58A6FF" font-size="10.5" font-weight="700" text-anchor="middle">info</text>
+  <text x="392" y="644" fill="#fff" font-size="12.5" font-family="ui-monospace, 'JetBrains Mono', monospace">tech-reborn-5.2.jar</text>
+  <text x="392" y="662" fill="#9aa6b8" font-size="11.5">Missing dependency: fabric-api — install to enable</text>
+  <rect x="1112" y="637" width="104" height="28" rx="9" fill="#22B8D8" fill-opacity="0.13" stroke="#22B8D8" stroke-opacity="0.4"/>
+  <text x="1164" y="655" fill="#22B8D8" font-size="11.5" font-weight="600" text-anchor="middle">Install</text>
+
+  <!-- green footer note -->
+  <text x="312" y="688" fill="#34D399" font-size="11.5">✓ Quarantine is reversible — files move to mods/.disabled</text>
 </svg>

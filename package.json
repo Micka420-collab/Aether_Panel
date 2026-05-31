@@ -4,6 +4,11 @@
   "private": true,
   "description": "Aether — premium multi-game server hosting platform (Minecraft, Icarus & more)",
   "license": "MIT",
+  "author": "Micka Delcato (Nextendo)",
+  "contributors": [
+    "Micka Delcato <micka.delcato.rp@gmail.com>",
+    "Nextendo"
+  ],
   "workspaces": [
     "packages/*",
     "apps/*"

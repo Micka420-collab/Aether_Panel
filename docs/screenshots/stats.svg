@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="Inter, system-ui, sans-serif" width="1280" height="720">
+  <defs>
+    <linearGradient id="cv" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#22B8D8"/><stop offset="100%" stop-color="#7C5CFF"/></linearGradient>
+    <radialGradient id="orb" cx="50%" cy="0%" r="80%"><stop offset="0%" stop-color="#7C5CFF" stop-opacity="0.12"/><stop offset="60%" stop-color="#07090F" stop-opacity="0"/></radialGradient>
+    <linearGradient id="fillCpu" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22B8D8" stop-opacity="0.32"/><stop offset="100%" stop-color="#22B8D8" stop-opacity="0"/></linearGradient>
+    <linearGradient id="fillMem" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7C5CFF" stop-opacity="0.32"/><stop offset="100%" stop-color="#7C5CFF" stop-opacity="0"/></linearGradient>
+    <linearGradient id="fillPly" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34D399" stop-opacity="0.30"/><stop offset="100%" stop-color="#34D399" stop-opacity="0"/></linearGradient>
+  </defs>
+
+  <!-- backdrop -->
+  <rect width="1280" height="720" fill="#07090F"/>
+  <rect width="1280" height="720" fill="url(#orb)"/>
+
+  <!-- sidebar -->
+  <rect x="0" y="0" width="248" height="720" fill="#0A0E18"/>
+  <line x1="248" y1="0" x2="248" y2="720" stroke="#ffffff" stroke-opacity="0.07"/>
+  <!-- logo -->
+  <rect x="24" y="26" width="26" height="26" rx="7" fill="#0E1422"/>
+  <path d="M37 31 L46 50 H41 L37 40 L33 50 H28 Z" fill="url(#cv)"/>
+  <text x="60" y="44" fill="#fff" font-size="17" font-weight="600">Aether</text>
+  <!-- new server button -->
+  <rect x="24" y="70" width="200" height="40" rx="11" fill="url(#cv)"/>
+  <text x="124" y="95" fill="#fff" font-size="13.5" font-weight="600" text-anchor="middle">+  New server</text>
+  <!-- nav -->
+  <rect x="20" y="130" width="208" height="40" rx="11" fill="#ffffff" fill-opacity="0.10"/>
+  <text x="44" y="155" fill="#fff" font-size="13.5">▣  Servers</text>
+  <text x="44" y="199" fill="#9aa6b8" font-size="13.5">💳  Billing</text>
+  <text x="44" y="239" fill="#9aa6b8" font-size="13.5">⚙  Account</text>
+  <text x="44" y="279" fill="#9aa6b8" font-size="13.5">🛡  Admin</text>
+  <text x="44" y="319" fill="#9aa6b8" font-size="13.5">📖  Docs</text>
+  <!-- user chip -->
+  <rect x="20" y="636" width="208" height="62" rx="13" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.08"/>
+  <circle cx="48" cy="667" r="16" fill="url(#cv)"/>
+  <text x="48" y="672" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">MD</text>
+  <text x="74" y="662" fill="#fff" font-size="12.5" font-weight="600">micka</text>
+  <text x="74" y="679" fill="#7a8699" font-size="11">micka@aether.host</text>
+
+  <!-- main -->
+  <text x="288" y="44" fill="#8b95a7" font-size="12.5">←  All servers</text>
+
+  <!-- header card -->
+  <rect x="288" y="60" width="968" height="116" rx="16" fill="#ffffff" fill-opacity="0.045" stroke="#ffffff" stroke-opacity="0.09"/>
+  <rect x="312" y="84" width="58" height="58" rx="14" fill="#0E1422" stroke="#ffffff" stroke-opacity="0.08"/>
+  <text x="341" y="124" font-size="30" text-anchor="middle">🟩</text>
+  <text x="388" y="104" fill="#fff" font-size="22" font-weight="700">Survival SMP</text>
+  <!-- state badge -->
+  <rect x="560" y="88" width="96" height="24" rx="12" fill="#34D399" fill-opacity="0.12" stroke="#34D399" stroke-opacity="0.4"/>
+  <circle cx="576" cy="100" r="4" fill="#34D399"/>
+  <text x="588" y="104" fill="#34D399" font-size="12" font-weight="600">Running</text>
+  <text x="388" y="132" fill="#8FE3F2" font-size="13.5" font-family="ui-monospace, monospace">play.aether.host  ⧉</text>
+  <!-- power buttons -->
+  <g font-size="12.5" font-weight="600">
+    <rect x="892" y="98" width="78" height="36" rx="10" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.1"/><text x="931" y="121" fill="#34D399" text-anchor="middle">▶ Start</text>
+    <rect x="980" y="98" width="92" height="36" rx="10" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.1"/><text x="1026" y="121" fill="#e6edf6" text-anchor="middle">⟳ Restart</text>
+    <rect x="1082" y="98" width="78" height="36" rx="10" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.1"/><text x="1121" y="121" fill="#FBBF24" text-anchor="middle">■ Stop</text>
+    <rect x="1170" y="98" width="44" height="36" rx="10" fill="#F85149" fill-opacity="0.14" stroke="#F85149" stroke-opacity="0.4"/><text x="1192" y="121" fill="#F85149" text-anchor="middle">⚡</text>
+  </g>
+
+  <!-- stat tiles -->
+  <g>
+    <!-- Tile 1 CPU -->
+    <rect x="288" y="192" width="186" height="74" rx="12" fill="#000" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.05"/>
+    <text x="306" y="218" fill="#7a8699" font-size="11.5">⚡ CPU</text>
+    <text x="306" y="246" fill="#fff" font-size="19" font-weight="700">38%</text>
+    <text x="306" y="261" fill="#5d6b7e" font-size="10">76% raw</text>
+    <!-- Tile 2 Memory -->
+    <rect x="486" y="192" width="186" height="74" rx="12" fill="#000" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.05"/>
+    <text x="504" y="218" fill="#7a8699" font-size="11.5">▣ Memory</text>
+    <text x="504" y="246" fill="#fff" font-size="19" font-weight="700">3.2 GB</text>
+    <text x="504" y="261" fill="#5d6b7e" font-size="10">of 6 GB</text>
+    <!-- Tile 3 Disk -->
+    <rect x="684" y="192" width="186" height="74" rx="12" fill="#000" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.05"/>
+    <text x="702" y="218" fill="#7a8699" font-size="11.5">▤ Disk</text>
+    <text x="702" y="246" fill="#fff" font-size="19" font-weight="700">4.1 GB</text>
+    <text x="702" y="261" fill="#5d6b7e" font-size="10">of 50 GB</text>
+    <!-- Tile 4 Players -->
+    <rect x="882" y="192" width="186" height="74" rx="12" fill="#000" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.05"/>
+    <text x="900" y="218" fill="#7a8699" font-size="11.5">👥 Players</text>
+    <text x="900" y="246" fill="#fff" font-size="19" font-weight="700">7/20</text>
+    <text x="900" y="261" fill="#5d6b7e" font-size="10">online</text>
+    <!-- Tile 5 Uptime -->
+    <rect x="1080" y="192" width="176" height="74" rx="12" fill="#000" fill-opacity="0.2" stroke="#ffffff" stroke-opacity="0.05"/>
+    <text x="1098" y="218" fill="#7a8699" font-size="11.5">⏱ Uptime</text>
+    <text x="1098" y="246" fill="#fff" font-size="19" font-weight="700">2d 4h</text>
+  </g>
+
+  <!-- tabs -->
+  <g font-size="13">
+    <text x="290" y="300" fill="#7a8699">Console</text>
+    <text x="372" y="300" fill="#7a8699">Copilot</text>
+    <text x="448" y="300" fill="#fff" font-weight="600">Stats</text>
+    <text x="506" y="300" fill="#7a8699">Content</text>
+    <text x="582" y="300" fill="#7a8699">Mod Doctor</text>
+    <text x="674" y="300" fill="#7a8699">Backups</text>
+    <text x="744" y="300" fill="#7a8699">Network</text>
+    <text x="814" y="300" fill="#7a8699">Proxy</text>
+    <rect x="446" y="312" width="48" height="2.5" rx="1" fill="#22B8D8"/>
+    <line x1="288" y1="313" x2="1256" y2="313" stroke="#ffffff" stroke-opacity="0.07"/>
+  </g>
+
+  <!-- stats panel -->
+  <rect x="288" y="332" width="968" height="360" rx="14" fill="#ffffff" fill-opacity="0.03" stroke="#ffffff" stroke-opacity="0.08"/>
+  <!-- panel header -->
+  <text x="308" y="360" fill="#fff" font-size="14" font-weight="600">Metrics history</text>
+  <text x="308" y="377" fill="#7a8699" font-size="11">Resampled · last 24 hours</text>
+  <!-- time-range selector -->
+  <g font-size="11.5" font-weight="600">
+    <rect x="1100" y="346" width="140" height="28" rx="9" fill="#000" fill-opacity="0.25" stroke="#ffffff" stroke-opacity="0.07"/>
+    <text x="1124" y="364" fill="#9aa6b8" text-anchor="middle">1h</text>
+    <rect x="1148" y="350" width="40" height="20" rx="7" fill="#22B8D8" fill-opacity="0.16" stroke="#22B8D8" stroke-opacity="0.45"/>
+    <text x="1168" y="364" fill="#8FE3F2" text-anchor="middle">24h</text>
+    <text x="1216" y="364" fill="#9aa6b8" text-anchor="middle">7d</text>
+  </g>
+
+  <!-- CPU chart -->
+  <g>
+    <text x="308" y="408" fill="#9aa6b8" font-size="11.5">⚡ CPU %</text>
+    <rect x="372" y="398" width="44" height="16" rx="5" fill="#22B8D8" fill-opacity="0.14"/>
+    <text x="394" y="410" fill="#8FE3F2" font-size="10.5" font-weight="700" text-anchor="middle">38%</text>
+    <text x="1240" y="408" fill="#5d6b7e" font-size="10" text-anchor="end">now · peak 71%</text>
+    <!-- grid -->
+    <g stroke="#ffffff" stroke-opacity="0.05">
+      <line x1="308" y1="420" x2="1240" y2="420"/>
+      <line x1="308" y1="446" x2="1240" y2="446"/>
+      <line x1="308" y1="472" x2="1240" y2="472"/>
+    </g>
+    <!-- area + line -->
+    <path d="M308,460 L385,452 L462,438 L540,463 L617,430 L694,448 L772,414 L849,442 L926,425 L1004,470 L1081,446 L1158,432 L1240,452 L1240,472 L308,472 Z" fill="url(#fillCpu)"/>
+    <path d="M308,460 L385,452 L462,438 L540,463 L617,430 L694,448 L772,414 L849,442 L926,425 L1004,470 L1081,446 L1158,432 L1240,452" fill="none" stroke="#22B8D8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+
+  <!-- Memory chart -->
+  <g>
+    <text x="308" y="500" fill="#9aa6b8" font-size="11.5">▣ Memory MB</text>
+    <rect x="396" y="490" width="58" height="16" rx="5" fill="#7C5CFF" fill-opacity="0.16"/>
+    <text x="425" y="502" fill="#b8a6ff" font-size="10.5" font-weight="700" text-anchor="middle">3296 MB</text>
+    <text x="1240" y="500" fill="#5d6b7e" font-size="10" text-anchor="end">now · max 6144</text>
+    <!-- grid -->
+    <g stroke="#ffffff" stroke-opacity="0.05">
+      <line x1="308" y1="512" x2="1240" y2="512"/>
+      <line x1="308" y1="536" x2="1240" y2="536"/>
+      <line x1="308" y1="560" x2="1240" y2="560"/>
+    </g>
+    <path d="M308,548 L385,544 L462,540 L540,533 L617,536 L694,528 L772,524 L849,530 L926,521 L1004,526 L1081,518 L1158,523 L1240,516 L1240,560 L308,560 Z" fill="url(#fillMem)"/>
+    <path d="M308,548 L385,544 L462,540 L540,533 L617,536 L694,528 L772,524 L849,530 L926,521 L1004,526 L1081,518 L1158,523 L1240,516" fill="none" stroke="#7C5CFF" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+
+  <!-- Players chart -->
+  <g>
+    <text x="308" y="588" fill="#9aa6b8" font-size="11.5">👥 Players</text>
+    <rect x="376" y="578" width="34" height="16" rx="5" fill="#34D399" fill-opacity="0.16"/>
+    <text x="393" y="590" fill="#34D399" font-size="10.5" font-weight="700" text-anchor="middle">7</text>
+    <text x="1240" y="588" fill="#5d6b7e" font-size="10" text-anchor="end">now · peak 14 / 20</text>
+    <!-- grid -->
+    <g stroke="#ffffff" stroke-opacity="0.05">
+      <line x1="308" y1="600" x2="1240" y2="600"/>
+      <line x1="308" y1="622" x2="1240" y2="622"/>
+      <line x1="308" y1="644" x2="1240" y2="644"/>
+    </g>
+    <path d="M308,640 L385,636 L462,628 L540,632 L617,618 L694,610 L772,621 L849,604 L926,612 L1004,624 L1081,616 L1158,628 L1240,634 L1240,644 L308,644 Z" fill="url(#fillPly)"/>
+    <path d="M308,640 L385,636 L462,628 L540,632 L617,618 L694,610 L772,621 L849,604 L926,612 L1004,624 L1081,616 L1158,628 L1240,634" fill="none" stroke="#34D399" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+
+  <!-- x-axis time labels -->
+  <g fill="#5d6b7e" font-size="9.5" font-family="ui-monospace, monospace">
+    <text x="308" y="662">24h</text>
+    <text x="462" y="662" text-anchor="middle">20h</text>
+    <text x="617" y="662" text-anchor="middle">16h</text>
+    <text x="772" y="662" text-anchor="middle">12h</text>
+    <text x="926" y="662" text-anchor="middle">8h</text>
+    <text x="1081" y="662" text-anchor="middle">4h</text>
+    <text x="1240" y="662" text-anchor="end">now</text>
+  </g>
+  <line x1="308" y1="672" x2="1240" y2="672" stroke="#ffffff" stroke-opacity="0.06"/>
+  <text x="308" y="687" fill="#5d6b7e" font-size="10">⟳ Auto-refresh 10s</text>
+  <text x="1240" y="687" fill="#5d6b7e" font-size="10" text-anchor="end">↧ Export CSV</text>
+</svg>

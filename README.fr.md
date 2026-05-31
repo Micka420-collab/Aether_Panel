@@ -6,10 +6,11 @@
 
 ### Des serveurs de jeu, invoqués en quelques secondes.
 
-**Hébergement multi-jeux premium et auto-hébergeable** — Minecraft, Icarus & plus —
-avec un panneau de contrôle glassmorphism/bento splendide, le réveil-à-la-connexion,
-l'installation de mods en un clic, une protection DDoS multi-couches, et une API
-pensée pour **votre propre launcher**.
+**Le panel d'hébergement de jeux auto-hébergeable qui a enfin l'air — et le feeling — premium.**
+Minecraft, Icarus, Valheim, Palworld, Rust & plus, derrière un panneau de contrôle
+glassmorphism/bento avec un **copilote IA**, le réveil-à-la-connexion, les modpacks en
+un clic, le **clonage** de serveur, une **marketplace de blueprints**, une protection
+DDoS multi-couches, et une API pensée pour **votre propre launcher**.
 
 [English](README.md) · **🌐 Français**
 
@@ -18,6 +19,7 @@ pensée pour **votre propre launcher**.
 [![CI](https://github.com/Micka420-collab/Aether_Panel/actions/workflows/ci.yml/badge.svg)](https://github.com/Micka420-collab/Aether_Panel/actions/workflows/ci.yml)
 [![Licence : MIT](https://img.shields.io/badge/Licence-MIT-22B8D8.svg?style=flat-square)](LICENSE)
 ![Auto-hébergé](https://img.shields.io/badge/auto--h%C3%A9berg%C3%A9-Ubuntu%20%2B%20Docker-7C5CFF?style=flat-square)
+![Installation](https://img.shields.io/badge/installation-une%20commande-34D399?style=flat-square)
 ![Statut](https://img.shields.io/badge/build-r%C3%A9ussi-34D399?style=flat-square)
 
 <br/>
@@ -37,35 +39,138 @@ pensée pour **votre propre launcher**.
 
 <br/>
 
-[**Fonctionnalités**](#-fonctionnalités) · [**Architecture**](#️-architecture) · [**Démarrage**](#-démarrage-rapide) · [**API launcher**](#-connecter-votre-launcher) · [**Anti-DDoS**](#️-protection-ddos-multi-couches) · [**Sécurité**](#-sécurité)
+### Une commande. Votre propre plateforme d'hébergement de jeux.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Micka420-collab/Aether_Panel/main/deploy/get.sh | sudo bash
+```
+
+<br/>
+
+[**Démarrage**](#-démarrage-rapide) · [**Fonctionnalités**](#-fonctionnalités) · [**Nouveautés**](#-nouveautés) · [**Architecture**](#️-architecture) · [**API launcher**](#-connecter-votre-launcher) · [**Anti-DDoS**](#️-protection-ddos-multi-couches) · [**Sécurité**](#-sécurité)
 
 </div>
 
 ---
 
-## 📸 Captures d'écran
+## 🚀 Démarrage rapide
+
+**Ubuntu + Docker — littéralement une ligne :**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Micka420-collab/Aether_Panel/main/deploy/get.sh | sudo bash
+```
+
+C'est tout. Le bootstrap clone le dépôt dans `/opt/aether`, installe Docker, génère
+des secrets forts, construit les images et démarre toute la stack —
+**panel + daemon + Postgres + Caddy + edge-proxy**. À la fin il affiche l'URL de votre
+panel ; ouvrez-la et inscrivez-vous — le **premier compte devient administrateur**. ✨
+
+```bash
+# Vous voulez le HTTPS + un domaine, ou durcir aussi le pare-feu de l'hôte ? Ajoutez des env :
+curl -fsSL .../deploy/get.sh | sudo APP_DOMAIN=panel.example.com APPLY_FIREWALL=1 bash
+```
+
+<details>
+<summary><b>Vous préférez cloner d'abord ? (même résultat)</b></summary>
+
+```bash
+git clone https://github.com/Micka420-collab/Aether_Panel.git aether && cd aether
+sudo bash deploy/install.sh        # ajoutez APPLY_FIREWALL=1 pour durcir l'hôte aussi
+```
+
+</details>
+
+<details>
+<summary><b>Au quotidien avec <code>make</code></b></summary>
+
+Un `Makefile` convivial enrobe Docker Compose pour ne jamais retenir les options :
+
+```bash
+make install     # installer / déployer
+make up          # démarrer la stack
+make logs        # suivre panel + daemon
+make ps          # statut
+make update      # git pull + rebuild + restart
+make backup-db   # dump Postgres gzip dans /var/lib/aether/backups
+make down        # arrêter
+make help        # tout lister (par défaut)
+```
+
+</details>
+
+<details>
+<summary><b>Développement local</b></summary>
+
+```bash
+npm install
+npm run build:shared
+cp .env.example .env                            # puis éditez les secrets
+cp apps/panel/.env.example apps/panel/.env
+# démarrez Postgres, puis :
+npm run db:push  --workspace @aether/panel
+npm run db:seed  --workspace @aether/panel
+npm run dev                                     # panel :3000 + daemon :8080
+npm test                                        # vitest (moteur de templates + jail des chemins)
+```
+
+Le daemon a besoin d'un moteur Docker accessible (`/var/run/docker.sock`).
+</details>
+
+---
+
+## 📸 Le panel
 
 <div align="center">
 
-<img src="docs/screenshots/hero.png" width="900" alt="Page d'accueil Aether" />
+<img src="docs/screenshots/dashboard.svg" width="900" alt="Dashboard Aether — console serveur live" />
 
-<br/><br/>
+<br/><sub>Console live, télémétrie temps réel, fichiers, mods, tâches, sauvegardes & plus — dans un dashboard qui ne date pas de 2014.</sub>
 
-> **Tableau de bord** — console live, stats temps réel, fichiers, mods, tâches planifiées…
-> <br/><sub>(aperçu fidèle au design ; le dashboard nécessite une base + un nœud actifs)</sub>
+</div>
 
-<img src="docs/screenshots/dashboard.png" width="900" alt="Dashboard Aether — console serveur" />
+---
 
-<br/><br/>
+## ✨ Nouveautés
+
+> Une vague de fonctionnalités phares — chacune marche directement, sans config en plus.
+
+<div align="center">
 
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/login.png" alt="Connexion" /><p align="center"><sub>Connexion (2FA TOTP prête)</sub></p></td>
-<td width="50%"><img src="docs/screenshots/docs-launcher.png" alt="Doc API launcher" /><p align="center"><sub>Documentation de l'API launcher</sub></p></td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/copilot.svg" alt="Copilote IA" /><br/>
+<b>✦ Copilote IA</b><br/>
+<sub>Demandez « pourquoi mon serveur ne démarre pas ? » et obtenez une vraie réponse — avec des correctifs en un clic. Utilise votre clé Anthropic, ou un assistant à base de règles hors-ligne.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/mod-doctor.svg" alt="Mod Doctor" /><br/>
+<b>🩺 Mod Doctor</b><br/>
+<sub>Scanne vos mods/plugins : doublons, mods client-only, incompatibilités loader/version & dépendances manquantes — et met les fautifs en quarantaine, de façon réversible.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/screenshots/blueprints.svg" alt="Marketplace de Blueprints" /><br/>
+<b>🧩 Marketplace de Blueprints</b><br/>
+<sub>Publiez un serveur parfaitement configuré comme blueprint partageable — et déployez n'importe quel blueprint dans un nouveau serveur en un clic.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/screenshots/stats.svg" alt="Historique des métriques" /><br/>
+<b>📈 Historique des métriques</b><br/>
+<sub>CPU / RAM / joueurs échantillonnés dans le temps et tracés en graphes nets dans l'app — 1h / 24h / 7j.</sub>
+</td>
 </tr>
 </table>
 
 </div>
+
+Et aussi : **🧬 Cloner & brancher** un serveur (config + monde, depuis une sauvegarde) ·
+**🔀 Réseaux Velocity** (gérez la liste des serveurs backend depuis le panel) ·
+**🎮 Crossplay** (Bedrock ↔ Java via Geyser/Floodgate) ·
+**🌍 Carte du monde** (rendu & téléchargement) · **☁️ Sauvegardes S3 off-site** ·
+**💳 Top-up carte Stripe** · **🔑 Changer son mot de passe** & **upgrade de plan** en un clic.
 
 ---
 
@@ -75,7 +180,7 @@ Conçu pour surpasser Pterodactyl, Aternos, Shockbyte & GPORTAL sur **trois axes
 
 | 🎛️ Expérience | 🧩 Étendue | 🛡️ Confiance |
 |---------------|-----------|--------------|
-| Déploiement en un clic, console & télémétrie live, sommeil réveil-à-la-connexion, un dashboard qui ne date pas de 2014. | Un moteur de *templates (eggs)* générique — Minecraft & Icarus aujourd'hui, n'importe quel jeu en **données, pas en code**. | TPS/RAM/CPU live, isolation durcie des conteneurs, protection DDoS multi-couches, sommeil équitable (pas de quota journalier). |
+| Install en une ligne, déploiement en un clic, un **copilote IA**, console & télémétrie live, sommeil réveil-à-la-connexion, un dashboard glass/bento. | Un moteur de *templates (eggs)* générique — Minecraft, Icarus, Valheim, Palworld, Rust & Velocity aujourd'hui ; n'importe quel jeu en **données, pas en code**. | TPS/RAM/CPU live, isolation durcie des conteneurs, protection DDoS multi-couches, sommeil équitable (pas de quota journalier), audité de façon adversariale. |
 
 ---
 
@@ -83,22 +188,29 @@ Conçu pour surpasser Pterodactyl, Aternos, Shockbyte & GPORTAL sur **trois axes
 
 | | |
 |---|---|
-| 🟩 **Multi-jeux** | Minecraft (Java + Bedrock : Paper, Purpur, Fabric, Forge, NeoForge, Vanilla, modpacks) · Icarus · Valheim · Palworld · Rust |
+| 🟩 **Multi-jeux** | Minecraft (Java + Bedrock : Paper, Purpur, Fabric, Forge, NeoForge, Vanilla, modpacks) · Icarus · Valheim · Palworld · Rust · proxy **Velocity** |
+| ✦ **Copilote IA** | Un assistant chat par serveur qui explique les erreurs et propose des correctifs en un clic (Anthropic, ou règles hors-ligne) |
 | 🖥️ **Console live** | Console temps réel (type xterm) via WebSocket, saisie de commandes, contrôles d'alimentation |
-| 📊 **Télémétrie** | CPU / RAM / disque / réseau / joueurs, en direct, dans un dashboard bento |
+| 📊 **Télémétrie + historique** | CPU / RAM / disque / réseau / joueurs, en direct **et** tracés dans le temps (1h/24h/7j) |
 | 🌙 **Réveil-à-la-connexion** | Les serveurs dorment quand ils sont vides et se réveillent à la 1ère connexion — + un lien de réveil partageable sans login |
-| 📦 **Contenu en 1 clic** | Recherche & installation de mods/plugins/modpacks depuis **Modrinth** *et* **CurseForge** |
+| 📦 **Contenu en 1 clic** | Recherche & installation de mods/plugins/**modpacks** depuis **Modrinth** *et* **CurseForge** |
+| 🩺 **Mod Doctor** | Détecte conflits/doublons/incompatibilités de mods et les met en quarantaine de façon réversible |
+| 🧬 **Cloner & brancher** | Dupliquez la config d'un serveur — et au choix son monde, depuis n'importe quelle sauvegarde |
+| 🧩 **Blueprints** | Publiez une config une fois, déployez-la partout en un clic — une marketplace de serveurs |
+| 🔀 **Réseaux Velocity** | Lancez un proxy et gérez sa liste de serveurs backend depuis le panel |
+| 🎮 **Crossplay** | Joueurs Bedrock sur un serveur Java via Geyser/Floodgate, activable depuis l'UI |
+| 🌍 **Carte du monde** | Rendu & téléchargement d'une carte d'aperçu de votre monde Minecraft |
 | 📁 **Fichiers + SFTP** | Éditeur dans le navigateur & serveur SFTP confiné (mot de passe du compte) |
-| 💾 **Sauvegardes** | À la demande & planifiées, monde « flushé », restauration en un clic |
-| 🌐 **Sous-domaines gratuits** | Réservez `vous.exemple.com` — enregistrements **A + SRV** auto (Cloudflare) |
+| 💾 **Sauvegardes** | À la demande & planifiées, monde « flushé », restauration en un clic — **+ S3 off-site** |
+| 🌐 **Sous-domaines gratuits** | Réservez `vous.exemple.com` — enregistrements **A + SRV** auto (Cloudflare), ou **DuckDNS** |
 | ⏰ **Tâches planifiées** | Redémarrages / commandes / sauvegardes en cron via un scheduler intégré |
 | 👥 **Sous-utilisateurs** | Accès d'équipe granulaire et scoped à un serveur |
-| 💳 **Facturation à crédits** | Mesure au Go-heure, jamais facturé à l'arrêt |
+| 💳 **Facturation à crédits** | Mesure au Go-heure, jamais facturé à l'arrêt — top-up carte **Stripe** |
 | 🔌 **API launcher** | Auth device-code + API REST/WS versionnée pour votre launcher custom |
 | 🤖 **Bot Discord** | `/status` `/start` `/stop` `/console` depuis Discord |
 | 🚨 **Monitoring** | Santé des nœuds & détection de crash, auto-restart, alertes webhook Discord |
 | 🛡️ **Protection DDoS** | Multi-couches : rate-limit panel + garde edge conscient de Minecraft + nftables |
-| 🔐 **Sécurité du compte** | 2FA TOTP, clés API scoped & hashées, verrouillage anti brute-force, journal d'audit |
+| 🔐 **Sécurité du compte** | 2FA TOTP, **changement de mot de passe en self-service**, clés API scoped & hashées, verrouillage anti brute-force, journal d'audit |
 
 ---
 
@@ -136,44 +248,10 @@ flowchart LR
 ```
 
 - **`packages/shared`** — types sans dépendances, scopes de permission, et le **moteur de templates de jeux**.
-- **`apps/panel`** — Next.js (App Router) : site vitrine + dashboard + REST + API launcher `/api/v1` + scheduler cron + monitor. Prisma/PostgreSQL.
-- **`apps/daemon`** — pilote Docker via `dockerode` : cycle de vie, WebSocket console/stats, RCON, gestionnaire de fichiers confiné, SFTP, sauvegardes tar.gz.
+- **`apps/panel`** — Next.js (App Router) : site vitrine + dashboard + REST + API launcher `/api/v1` + scheduler cron + monitor + copilote IA. Prisma/PostgreSQL.
+- **`apps/daemon`** — pilote Docker via `dockerode` : cycle de vie, WebSocket console/stats, RCON, gestionnaire de fichiers confiné, SFTP, sauvegardes tar.gz, copies S3 off-site sans dépendance.
 - **`apps/edge-proxy`** — proxy Go de réveil-à-la-connexion avec un garde anti-DDoS conscient de Minecraft.
-
----
-
-## 🚀 Démarrage rapide
-
-**Ubuntu + Docker — une seule commande :**
-
-```bash
-git clone https://github.com/Micka420-collab/Aether_Panel.git aether && cd aether
-sudo bash deploy/install.sh           # ajoutez APPLY_FIREWALL=1 pour durcir l'hôte aussi
-```
-
-L'installeur met en place Docker, génère des secrets forts, construit les images
-et démarre **panel + daemon + Postgres + Caddy + edge-proxy**. Ouvrez l'URL affichée
-et inscrivez-vous — le **premier compte devient administrateur**.
-
-> 💡 Définissez `APP_DOMAIN=panel.example.com` avant pour le HTTPS automatique.
-
-<details>
-<summary><b>Développement local</b></summary>
-
-```bash
-npm install
-npm run build:shared
-cp .env.example .env                            # puis éditez les secrets
-cp apps/panel/.env.example apps/panel/.env
-# démarrez Postgres, puis :
-npm run db:push  --workspace @aether/panel
-npm run db:seed  --workspace @aether/panel
-npm run dev                                     # panel :3000 + daemon :8080
-npm test                                        # vitest (moteur de templates + jail des chemins)
-```
-
-Le daemon a besoin d'un moteur Docker accessible (`/var/run/docker.sock`).
-</details>
+- **`apps/discord-bot`** — bot Discord de contrôle (commandes slash), opt-in.
 
 ---
 
@@ -185,7 +263,7 @@ Docker, le comportement de démarrage/arrêt, les ports, les variables d'env
 (rendues automatiquement en formulaire de réglages), le script d'installation et
 les capacités (`rcon`, `wine`, `steamcmd`, `mods`, …). Aucune modif du daemon ni du panel.
 
-> Voir `minecraft.ts` (RCON) et `icarus.ts` (SteamCMD sous Wine) pour des exemples.
+> Voir `minecraft.ts` (RCON), `icarus.ts` (SteamCMD sous Wine) et `velocity.ts` (proxy) pour des exemples.
 
 ---
 
@@ -208,7 +286,8 @@ minecraft.launch({ server: conn.host, port: conn.port });
 ```
 
 Un client de référence exécutable et sans dépendance se trouve dans
-[`examples/launcher`](examples/launcher) · guide complet dans `/docs/launcher`.
+[`examples/launcher`](examples/launcher) · guide complet dans `/docs/launcher` ·
+spec lisible par machine sur `/api/openapi.json`.
 
 ---
 
@@ -236,10 +315,11 @@ Durci par conception et **audité de façon adversariale** — voir
 [`docs/SECURITY-AUDIT.md`](docs/SECURITY-AUDIT.md) et [`SECURITY.md`](SECURITY.md).
 
 - bcrypt + **2FA TOTP** (secrets chiffrés AES-256-GCM, codes de récupération HMAC à usage unique)
+- **Changement de mot de passe en self-service** — vérifie le mot de passe actuel, puis révoque toutes les autres sessions
 - Secrets **fail-closed** en production · comparaisons de tokens en temps constant
 - Clés **API** scoped et hashées · tokens WebSocket HMAC à courte durée
 - Gestionnaire de fichiers & SFTP confinés (anti-symlink) · scopes de permission par serveur
-- **Verrouillage anti brute-force** par compte · IP cliente fiable (anti-spoofing)
+- **Verrouillage anti brute-force** par compte (login, 2FA *et* changement de mot de passe) · IP cliente fiable (anti-spoofing)
 - Limites CPU/RAM/PID par conteneur + drop de capacités · RCON lié à la loopback
 
 ---
@@ -249,7 +329,7 @@ Durci par conception et **audité de façon adversariale** — voir
 | Domaine | Technos |
 |---------|---------|
 | **Panel** | Next.js (App Router), React, TypeScript, Tailwind CSS, Framer Motion, Prisma, PostgreSQL |
-| **Daemon** | Node.js, Express, `dockerode`, `ws`, RCON, `ssh2` (SFTP) |
+| **Daemon** | Node.js, Express, `dockerode`, `ws`, RCON, `ssh2` (SFTP), S3 SigV4 sans dépendance |
 | **Edge proxy** | Go (protocole Minecraft, réveil-à-la-connexion, garde DDoS) |
 | **Auth** | Sessions en base, `jose` (JWT/HMAC), `otplib` (TOTP), `bcryptjs` |
 | **Infra** | Docker Compose, Caddy (TLS auto), nftables, CI GitHub Actions, Vitest |
@@ -260,12 +340,13 @@ Durci par conception et **audité de façon adversariale** — voir
 
 ```
 packages/shared      types, scopes, moteur de templates de jeux  (+ vitest)
-apps/panel           panel Next.js — UI + REST + API launcher + scheduler + monitor
-apps/daemon          daemon de contrôle Docker + serveur SFTP  (+ vitest)
+apps/panel           panel Next.js — UI + REST + API launcher + scheduler + monitor + copilote
+apps/daemon          daemon de contrôle Docker + serveur SFTP + sauvegardes S3  (+ vitest)
 apps/edge-proxy      proxy Go réveil-à-la-connexion + garde anti-DDoS
 apps/discord-bot     bot Discord de contrôle (commandes slash)
 examples/launcher    client launcher de référence sans dépendance
-deploy/              install.sh · Caddyfile · firewall.sh · unité systemd
+deploy/              get.sh (one-liner) · install.sh · Caddyfile · firewall.sh · unité systemd
+Makefile             wrappers `make` conviviaux autour de docker compose
 docker-compose.yml   stack mono-hôte
 .github/workflows    CI : build · typecheck · tests · go build
 ```
@@ -274,14 +355,19 @@ docker-compose.yml   stack mono-hôte
 
 ## 🗺️ Feuille de route
 
-Suivie dans [`docs/SECURITY-AUDIT.md`](docs/SECURITY-AUDIT.md) :
-facturation Stripe · login OAuth Microsoft/Discord · import d'eggs Pterodactyl ·
-ordonnancement multi-nœuds · rate-limit via Redis · montée de version majeure Next.js.
+Livré récemment : copilote IA · clonage/branche de serveur · réseaux Velocity · Mod Doctor ·
+marketplace de blueprints · historique des métriques · top-up Stripe · sauvegardes S3 off-site · crossplay.
+Ensuite : login OAuth Microsoft/Discord · import d'eggs Pterodactyl · ordonnancement multi-nœuds ·
+rate-limit via Redis.
 
 ---
 
 <div align="center">
 
-**Sous licence MIT** · Conçu avec ⟁ pour les auto-hébergeurs.
+### Conçu par
+
+**Micka Delcato** &nbsp;✕&nbsp; **Nextendo**
+
+<sub>**Sous licence MIT** · Conçu avec ⟁ pour les auto-hébergeurs.</sub>
 
 </div>

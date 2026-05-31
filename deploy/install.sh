@@ -38,6 +38,13 @@ ok "Data directories ready"
 # ── 3. Environment ─────────────────────────────────────────────────────────
 gen() { openssl rand -base64 48 | tr -d '\n/+=' | cut -c1-48; }
 
+# Offer a domain (for automatic HTTPS) when running interactively and none was
+# pre-set. Gated on a TTY so the `curl | sudo bash` path skips it silently.
+if [ -z "${APP_DOMAIN:-}" ] && [ -t 0 ] && [ ! -f .env ]; then
+  read -rp "$(echo -e "${CYAN}▸${NC} Domain for the panel (blank = serve on plain http://<ip>): ")" _d || true
+  [ -n "${_d:-}" ] && export APP_DOMAIN="$_d"
+fi
+
 if [ ! -f .env ]; then
   say "Generating .env with fresh secrets…"
   # The node address (DEFAULT_NODE_FQDN / NODE_PUBLIC_IP) must be reachable BOTH
@@ -113,12 +120,19 @@ else
   warn "  (opt-in to avoid locking yourself out on a non-standard SSH port)."
 fi
 
+APP_URL="$(grep ^APP_URL .env | cut -d= -f2-)"
 echo
-ok "Aether is starting up!"
-echo -e "   Panel:   ${GREEN}$(grep ^APP_URL .env | cut -d= -f2-)${NC}"
+echo -e "${GREEN}┌──────────────────────────────────────────────┐${NC}"
+echo -e "${GREEN}│            Aether is up and running!         │${NC}"
+echo -e "${GREEN}└──────────────────────────────────────────────┘${NC}"
+echo
+echo -e "   Panel:   ${GREEN}${APP_URL}${NC}"
 echo -e "   Daemon:  port 8080"
 echo
-echo "  • The FIRST account you register becomes the admin."
-echo "  • Check status:   docker compose ps"
-echo "  • Tail logs:      docker compose logs -f panel daemon"
-echo "  • Stop:           docker compose down"
+echo -e "   ${YEL}→ The FIRST account you register becomes the admin.${NC}"
+echo
+echo "   Handy commands:"
+echo "     make ps       # status"
+echo "     make logs     # tail panel + daemon"
+echo "     make down     # stop"
+echo "     make update   # pull + rebuild + restart"
