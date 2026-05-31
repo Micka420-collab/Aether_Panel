@@ -6,11 +6,15 @@
 
 ### Des serveurs de jeu, invoqués en quelques secondes.
 
-**Le panel d'hébergement de jeux auto-hébergeable qui a enfin l'air — et le feeling — premium.**
-Minecraft, Icarus, Valheim, Palworld, Rust & plus, derrière un panneau de contrôle
-glassmorphism/bento avec un **copilote IA**, le réveil-à-la-connexion, les modpacks en
-un clic, le **clonage** de serveur, une **marketplace de blueprints**, une protection
-DDoS multi-couches, et une API pensée pour **votre propre launcher**.
+**Hébergez vous-même votre plateforme de serveurs de jeu — une qui a enfin l'air, et le feeling, premium.**
+
+Lancez Minecraft, Icarus, Valheim, Palworld ou Rust en quelques secondes, puis pilotez-les
+depuis un panneau de contrôle épuré, tout en verre et bento. Un **copilote IA** répond à vos
+questions et corrige les problèmes à votre place, les serveurs **s'endorment quand personne ne
+joue** et se réveillent dès qu'un joueur se connecte, et les mods, modpacks, sauvegardes — voire
+le clonage complet d'un serveur — se font en un clic. Une **API propre** vous laisse brancher
+votre propre launcher, la protection DDoS multi-couches est intégrée — et tout tourne sur *votre*
+matériel, selon vos règles, sans abonnement par siège.
 
 [English](README.md) · **🌐 Français**
 
@@ -142,7 +146,7 @@ Le daemon a besoin d'un moteur Docker accessible (`/var/run/docker.sock`).
 <td width="50%" valign="top">
 <img src="docs/screenshots/copilot.svg" alt="Copilote IA" /><br/>
 <b>✦ Copilote IA</b><br/>
-<sub>Demandez « pourquoi mon serveur ne démarre pas ? » et obtenez une vraie réponse — avec des correctifs en un clic. Utilise votre clé Anthropic, ou un assistant à base de règles hors-ligne.</sub>
+<sub>Demandez « pourquoi mon serveur ne démarre pas ? » et obtenez une vraie réponse — avec des correctifs en un clic. Collez votre clé Anthropic directement dans le dashboard (sans code), ou utilisez l'assistant à base de règles hors-ligne.</sub>
 </td>
 <td width="50%" valign="top">
 <img src="docs/screenshots/mod-doctor.svg" alt="Mod Doctor" /><br/>
@@ -189,7 +193,7 @@ Conçu pour surpasser Pterodactyl, Aternos, Shockbyte & GPORTAL sur **trois axes
 | | |
 |---|---|
 | 🟩 **Multi-jeux** | Minecraft (Java + Bedrock : Paper, Purpur, Fabric, Forge, NeoForge, Vanilla, modpacks) · Icarus · Valheim · Palworld · Rust · proxy **Velocity** |
-| ✦ **Copilote IA** | Un assistant chat par serveur qui explique les erreurs et propose des correctifs en un clic (Anthropic, ou règles hors-ligne) |
+| ✦ **Copilote IA** | Un assistant chat par serveur qui explique les erreurs et propose des correctifs en un clic — **connectez votre clé Anthropic depuis le dashboard** (Admin), ou en mode règles hors-ligne |
 | 🖥️ **Console live** | Console temps réel (type xterm) via WebSocket, saisie de commandes, contrôles d'alimentation |
 | 📊 **Télémétrie + historique** | CPU / RAM / disque / réseau / joueurs, en direct **et** tracés dans le temps (1h/24h/7j) |
 | 🌙 **Réveil-à-la-connexion** | Les serveurs dorment quand ils sont vides et se réveillent à la 1ère connexion — + un lien de réveil partageable sans login |

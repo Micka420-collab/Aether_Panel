@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { requireUser } from "@/lib/auth";
+import { requireUser, HttpError } from "@/lib/auth";
 import { json, route } from "@/lib/http";
+import { hit } from "@/lib/ratelimit";
 import { getServerContext, assertScope } from "@/lib/access";
 import { DaemonClient } from "@/lib/daemon";
 import { getTemplate } from "@aether/shared";
@@ -11,18 +12,21 @@ import {
   type AssistantMessage,
   type AssistantVariable,
 } from "@/lib/assistant";
+import { runCopilotAgent } from "@/lib/copilot-agent";
+import { getAnthropicKey } from "@/lib/settings";
 
 /**
  * AI Server Copilot endpoint.
  *
- * POST { messages: [{ role, content }] } -> { reply, suggestedCommands?, source }
+ * POST { messages: [{ role, content }] } -> { reply, suggestedCommands?, actions?, source }
  *
- * Read-only with respect to the server: it only gathers context and asks the
- * assistant. Gated on `control.console` (the same view-level scope used by the
- * metrics/stats route), because the chat surfaces live console-adjacent state.
- * Whether the user may *apply* suggested commands is decided separately by
- * `control.command` (we forward that as `canCommand` so the helper only proposes
- * runnable actions the user can actually execute).
+ * Entry is gated on `control.console`. With NO Anthropic key set, the Copilot is
+ * a read-only rule-based helper (it only gathers context and proposes commands).
+ * With a key set, it becomes an AGENTIC copilot that can take REAL actions —
+ * power, console, settings, mods/plugins, create servers — each one re-checked
+ * against THIS user's scopes inside the tool executor, so it can never exceed
+ * what the user could do by hand. Bounded by a per-user rate limit below (each
+ * message can fan out to several Anthropic calls).
  */
 
 const schema = z.object({
@@ -43,6 +47,11 @@ export const POST = route(async (req, ctx: { params: { id: string } }) => {
   const user = await requireUser();
   const c = await getServerContext(user, ctx.params.id);
   assertScope(c, "control.console");
+
+  // Per-user cap: a single message can drive up to MAX_TURNS Anthropic calls, so
+  // bound how many messages a user can send per minute (cost / abuse guard).
+  const rl = hit(`copilot:${user.id}`, 20, 60_000);
+  if (!rl.ok) throw new HttpError(429, `You're sending messages too fast. Try again in ${rl.retryAfter}s.`);
 
   const { messages } = schema.parse(await req.json());
 
@@ -88,6 +97,21 @@ export const POST = route(async (req, ctx: { params: { id: string } }) => {
     canCommand,
   };
 
-  const result = await askAssistant(assistantCtx, messages as AssistantMessage[]);
+  // A key set from the admin dashboard takes precedence over the env var.
+  const { key } = await getAnthropicKey();
+
+  // With a key, run the AGENTIC Copilot: it can take real actions (power,
+  // settings, mods, create servers) — strictly within THIS user's permissions,
+  // re-checked per tool. Without a key, fall back to the read-only rule helper.
+  const result = key
+    ? await runCopilotAgent({
+        user,
+        currentServerId: c.server.id,
+        ctx: assistantCtx,
+        messages: messages as AssistantMessage[],
+        apiKey: key,
+      })
+    : await askAssistant(assistantCtx, messages as AssistantMessage[], null);
+
   return json(result);
 });

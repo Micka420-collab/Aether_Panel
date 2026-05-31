@@ -56,10 +56,22 @@ export interface AssistantMessage {
   content: string;
 }
 
+/** A real action the agentic Copilot performed via a tool, for the UI timeline. */
+export interface AgentAction {
+  /** Tool name, e.g. "power_server" / "install_content" / "create_server". */
+  tool: string;
+  /** Human one-liner describing what happened, e.g. "Started Survival SMP". */
+  summary: string;
+  /** Whether the action succeeded (false → shown as a failed/blocked step). */
+  ok: boolean;
+}
+
 export interface AssistantResult {
   reply: string;
   /** Concrete console commands the user can one-click apply (no leading slash). */
   suggestedCommands?: string[];
+  /** Real actions the agent took this turn (agentic AI path only). */
+  actions?: AgentAction[];
   /** Which engine produced the reply, for the UI to label. */
   source: "ai" | "rules";
 }
@@ -67,15 +79,22 @@ export interface AssistantResult {
 const MODEL = "claude-haiku-4-5-20251001";
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
-/** Public entrypoint. Picks the AI path when a key exists, else the rule engine. */
+/**
+ * Public entrypoint. Picks the AI path when a key exists, else the rule engine.
+ *
+ * `apiKey` lets the caller pass a key resolved at request time (e.g. one set from
+ * the admin dashboard, which takes precedence over env). When omitted, we fall
+ * back to the ANTHROPIC_API_KEY env var so the function stays usable standalone.
+ */
 export async function askAssistant(
   ctx: AssistantContext,
   messages: AssistantMessage[],
+  apiKey?: string | null,
 ): Promise<AssistantResult> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (key && key.trim()) {
+  const key = (apiKey ?? process.env.ANTHROPIC_API_KEY)?.trim();
+  if (key) {
     try {
-      return await askAnthropic(key.trim(), ctx, messages);
+      return await askAnthropic(key, ctx, messages);
     } catch (e) {
       // Never surface upstream/network/quota errors to the user — degrade to the
       // deterministic helper so the chat keeps working.
@@ -88,7 +107,7 @@ export async function askAssistant(
 
 // ── AI path ────────────────────────────────────────────────────────────────
 
-function buildSystemPrompt(ctx: AssistantContext): string {
+export function buildSystemPrompt(ctx: AssistantContext): string {
   const vars = ctx.variables.length
     ? ctx.variables
         .map((v) => {

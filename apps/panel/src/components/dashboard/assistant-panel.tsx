@@ -13,11 +13,19 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/client";
 
+interface AgentAction {
+  tool: string;
+  summary: string;
+  ok: boolean;
+}
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   /** suggested console commands attached to an assistant message */
   commands?: string[];
+  /** real actions the agent took for this reply */
+  actions?: AgentAction[];
   /** which engine produced this reply */
   source?: "ai" | "rules";
 }
@@ -25,14 +33,15 @@ interface ChatMessage {
 interface AssistantResponse {
   reply: string;
   suggestedCommands?: string[];
+  actions?: AgentAction[];
   source: "ai" | "rules";
 }
 
 const SUGGESTIONS = [
   "Why won't my server start?",
-  "How do I add a plugin?",
+  "Install Sodium and restart",
   "Set the difficulty to hard",
-  "Where are my backups?",
+  "Create a new Paper 1.21 server",
 ];
 
 /**
@@ -84,6 +93,7 @@ export function AssistantPanel({ id, detail }: { id: string; detail: any }) {
           role: "assistant",
           content: res.reply,
           commands: res.suggestedCommands,
+          actions: res.actions,
           source: res.source,
         },
       ]);
@@ -116,7 +126,7 @@ export function AssistantPanel({ id, detail }: { id: string; detail: any }) {
         <div className="min-w-0">
           <h3 className="font-display text-sm font-semibold text-white">Server Copilot</h3>
           <p className="truncate text-xs text-white/40">
-            Ask anything about <span className="text-white/60">{serverName}</span>
+            Ask, or tell me to act on <span className="text-white/60">{serverName}</span>
           </p>
         </div>
       </div>
@@ -131,7 +141,8 @@ export function AssistantPanel({ id, detail }: { id: string; detail: any }) {
             <div>
               <p className="font-display text-white">How can I help with this server?</p>
               <p className="mt-1 max-w-sm text-sm text-white/45">
-                I know your game, version, state and startup settings. Ask a question or pick one below.
+                I can answer questions <span className="text-white/65">and actually do things</span> — power,
+                settings, install mods/plugins, even spin up new servers — all within your permissions.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2">
@@ -162,6 +173,25 @@ export function AssistantPanel({ id, detail }: { id: string; detail: any }) {
               )}
             </span>
             <div className={`min-w-0 max-w-[80%] ${m.role === "user" ? "items-end text-right" : ""}`}>
+              {/* actions the agent actually performed */}
+              {m.role === "assistant" && m.actions && m.actions.length > 0 && (
+                <div className="mb-2 space-y-1 rounded-xl border border-white/10 bg-black/20 p-2.5 text-left">
+                  <div className="flex items-center gap-1.5 px-0.5 text-[11px] uppercase tracking-wide text-white/35">
+                    <Wand2 className="h-3 w-3" /> Actions taken
+                  </div>
+                  {m.actions.map((a, ai) => (
+                    <div key={ai} className="flex items-start gap-2 text-xs">
+                      {a.ok ? (
+                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-online" />
+                      ) : (
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warn" />
+                      )}
+                      <span className={a.ok ? "text-white/75" : "text-warn/90"}>{a.summary}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div
                 className={`inline-block whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-left text-sm leading-relaxed ${
                   m.role === "user"

@@ -6,11 +6,14 @@
 
 ### Game servers, summoned in seconds.
 
-**The self-hostable game-hosting panel that finally looks — and feels — premium.**
-Minecraft, Icarus, Valheim, Palworld, Rust & more, behind a glass/bento control
-panel with an **AI copilot**, wake-on-join sleeping, one-click modpacks, server
-**cloning**, a **blueprint marketplace**, layered DDoS protection, and a clean
-API built for your **own launcher**.
+**Self-host your own game-hosting platform — one that finally looks and feels premium.**
+
+Spin up Minecraft, Icarus, Valheim, Palworld or Rust in seconds, then run them from a
+calm glass-and-bento control panel. An **AI copilot** answers your questions and fixes
+things for you, servers **sleep when nobody's online** and wake the moment a player joins,
+and mods, modpacks, backups and even whole-server clones are a single click away. There's
+a clean **API for your own launcher**, layered DDoS protection baked in — and it all runs
+on *your* hardware, your rules, with no per-seat monthly fees.
 
 **🌐 English** · [Français](README.fr.md)
 
@@ -142,7 +145,7 @@ The daemon needs a reachable Docker engine (`/var/run/docker.sock`).
 <td width="50%" valign="top">
 <img src="docs/screenshots/copilot.svg" alt="AI Server Copilot" /><br/>
 <b>✦ AI Server Copilot</b><br/>
-<sub>Ask "why won't my server start?" and get a real answer — with one-click fixes. Uses your Anthropic key, or a built-in rule-based helper offline.</sub>
+<sub>Ask "why won't my server start?" and get a real answer — with one-click fixes. Paste your Anthropic key right in the dashboard (no code), or run the built-in rule-based helper offline.</sub>
 </td>
 <td width="50%" valign="top">
 <img src="docs/screenshots/mod-doctor.svg" alt="Mod Conflict Doctor" /><br/>
@@ -189,7 +192,7 @@ Built to out-class Pterodactyl, Aternos, Shockbyte & GPORTAL on **three axes at 
 | | |
 |---|---|
 | 🟩 **Multi-game** | Minecraft (Java + Bedrock: Paper, Purpur, Fabric, Forge, NeoForge, Vanilla, modpacks) · Icarus · Valheim · Palworld · Rust · **Velocity** proxy |
-| ✦ **AI Copilot** | A per-server chat assistant that explains failures and proposes one-click fixes (Anthropic, or rule-based offline) |
+| ✦ **AI Copilot** | A per-server chat assistant that explains failures and proposes one-click fixes — **connect your Anthropic key from the dashboard** (Admin), or run rule-based offline |
 | 🖥️ **Live console** | Real-time xterm-style console over WebSocket, command input, power controls |
 | 📊 **Telemetry + history** | CPU / RAM / disk / network / players, live **and** charted over time (1h/24h/7d) |
 | 🌙 **Wake-on-join** | Servers sleep when empty and wake on the first connection — plus a no-login shareable wake link |

@@ -383,6 +383,15 @@ model AuditLog {
   @@index([serverId])
 }
 
+// Instance-wide key/value settings editable from the admin dashboard. Secret
+// values (e.g. the AI API key) are stored AES-256-GCM encrypted; non-secret
+// values in plaintext. Keeps operator config out of the code/.env.
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 // Pricing / plans surfaced on the marketing site and used for resource presets.
 model Plan {
   id           String  @id @default(cuid())
