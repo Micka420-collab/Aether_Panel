@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { ShieldCheck, KeyRound, Loader2, Plus, Trash2, Copy, Check, AlertTriangle } from "lucide-react";
+import { ShieldCheck, KeyRound, Loader2, Plus, Trash2, Copy, Check, AlertTriangle, Lock } from "lucide-react";
 import { api } from "@/lib/client";
 import { relativeTime } from "@/lib/util";
 import { WebhooksPanel } from "@/components/dashboard/webhooks-panel";
@@ -49,9 +49,79 @@ export default function AccountPage() {
         </div>
       </div>
 
+      <ChangePassword />
       <TwoFactor me={me} onChange={loadMe} />
       <ApiKeys keys={keys} reload={loadKeys} isAdmin={me.role === "ADMIN"} />
       <WebhooksPanel />
+    </div>
+  );
+}
+
+function ChangePassword() {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  async function submit() {
+    setError(null);
+    setDone(false);
+    if (next.length < 8) {
+      setError("New password must be at least 8 characters.");
+      return;
+    }
+    if (next !== confirm) {
+      setError("New passwords don't match.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await api("/api/account/password", { method: "POST", json: { currentPassword: current, newPassword: next } });
+      setDone(true);
+      setCurrent("");
+      setNext("");
+      setConfirm("");
+      setTimeout(() => setDone(false), 4000);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="glass p-6">
+      <h2 className="flex items-center gap-2 font-display font-semibold text-white">
+        <Lock className="h-4 w-4 text-cyan" /> Password
+      </h2>
+      <p className="mt-1 text-sm text-white/45">Change your account password. Your other devices will be signed out.</p>
+
+      {error && <div className="mt-3 rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">{error}</div>}
+      {done && (
+        <div className="mt-3 flex items-center gap-2 rounded-xl border border-online/30 bg-online/10 px-3 py-2 text-sm text-online">
+          <Check className="h-4 w-4" /> Password updated.
+        </div>
+      )}
+
+      <div className="mt-4 grid max-w-md gap-3">
+        <div>
+          <label className="label">Current password</label>
+          <input className="input" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} />
+        </div>
+        <div>
+          <label className="label">New password</label>
+          <input className="input" type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Confirm new password</label>
+          <input className="input" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        </div>
+        <button onClick={submit} disabled={busy || !current || !next || !confirm} className="btn-primary w-fit">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />} Update password
+        </button>
+      </div>
     </div>
   );
 }
