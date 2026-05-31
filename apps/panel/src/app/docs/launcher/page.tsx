@@ -24,6 +24,13 @@ export default function LauncherDocs() {
         Connect your custom Minecraft launcher to Aether. Authenticate a user with a device code, list the servers
         they can access, fetch live connection info, and launch the game straight into the server.
       </p>
+      <p className="text-sm text-white/50">
+        Machine-readable spec:{" "}
+        <a href="/api/openapi.json" target="_blank" rel="noopener" className="text-cyan-light underline hover:text-cyan">
+          /api/openapi.json
+        </a>{" "}
+        (OpenAPI 3.1) — load it into Swagger UI, Scalar or Postman; &quot;copy as curl&quot; works out of the box.
+      </p>
 
       <h2 className="font-display text-2xl font-semibold text-white">1 · Authenticate (device code)</h2>
       <p>

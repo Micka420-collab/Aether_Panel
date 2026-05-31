@@ -5,6 +5,7 @@ import { json, route } from "@/lib/http";
 import { getServerContext, assertScope } from "@/lib/access";
 import { DaemonClient } from "@/lib/daemon";
 import { audit } from "@/lib/audit";
+import { emitWebhook } from "@/lib/webhooks";
 
 const schema = z.object({ action: z.enum(["start", "stop", "restart", "kill"]) });
 
@@ -23,5 +24,7 @@ export const POST = route(async (req, ctx: { params: { id: string } }) => {
   const optimistic = action === "start" || action === "restart" ? "starting" : "stopping";
   await db.server.update({ where: { id: c.server.id }, data: { state: optimistic } });
   await audit("server.power", { userId: user.id, serverId: c.server.id, metadata: { action } });
+  const evt = action === "start" ? "server.started" : action === "restart" ? "server.restarted" : "server.stopped";
+  await emitWebhook(evt, { serverId: c.server.id, name: c.server.name, action }, { serverId: c.server.id, ownerId: c.server.ownerId });
   return json({ ok: true });
 });

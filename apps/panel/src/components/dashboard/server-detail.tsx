@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Play, Square, RotateCw, Zap, Copy, Check, Cpu, MemoryStick, HardDrive, Users, Clock,
-  Terminal, FolderOpen, SlidersHorizontal, Archive, Network, ArrowLeft, Loader2, Package, CalendarClock, Users2,
+  Terminal, FolderOpen, SlidersHorizontal, Archive, Network, ArrowLeft, Loader2, Package, CalendarClock, Users2, Palette,
 } from "lucide-react";
 import { useServerSocket } from "@/lib/use-server-socket";
 import { api } from "@/lib/client";
@@ -17,8 +17,10 @@ import { NetworkPanel } from "./network-panel";
 import { ModsPanel } from "./mods-panel";
 import { SchedulesPanel } from "./schedules-panel";
 import { SubusersPanel } from "./subusers-panel";
+import { AppearancePanel } from "./appearance-panel";
+import { PlayersPanel } from "./players-panel";
 
-type Tab = "console" | "files" | "mods" | "schedules" | "settings" | "backups" | "network" | "subusers";
+type Tab = "console" | "files" | "players" | "appearance" | "mods" | "schedules" | "settings" | "backups" | "network" | "subusers";
 
 export function ServerDetail({ id }: { id: string }) {
   const [detail, setDetail] = useState<any>(null);
@@ -78,7 +80,9 @@ export function ServerDetail({ id }: { id: string }) {
 
   const tabs: { key: Tab; label: string; icon: any; show: boolean }[] = [
     { key: "console", label: "Console", icon: Terminal, show: true },
+    { key: "players", label: "Players", icon: Users2, show: s.game === "minecraft" && can("control.command") },
     { key: "files", label: "Files", icon: FolderOpen, show: can("file.read") },
+    { key: "appearance", label: "Appearance", icon: Palette, show: s.game === "minecraft" && can("file.read") },
     { key: "mods", label: "Content", icon: Package, show: supportsContent && can("startup.read") },
     { key: "schedules", label: "Schedules", icon: CalendarClock, show: can("schedule.read") },
     { key: "settings", label: "Settings", icon: SlidersHorizontal, show: can("startup.read") || can("settings.rename") },
@@ -167,7 +171,9 @@ export function ServerDetail({ id }: { id: string }) {
 
       <div className="mt-5">
         {tab === "console" && <ConsolePanel socket={socket} canCommand={can("control.command")} />}
+        {tab === "players" && <PlayersPanel id={id} canManage={can("players.manage")} />}
         {tab === "files" && <FilesPanel id={id} canWrite={can("file.write")} canDelete={can("file.delete")} />}
+        {tab === "appearance" && <AppearancePanel id={id} canWrite={can("file.write")} />}
         {tab === "mods" && <ModsPanel id={id} canManage={can("startup.update")} />}
         {tab === "schedules" && <SchedulesPanel id={id} canManage={can("schedule.update")} />}
         {tab === "settings" && <SettingsPanel id={id} detail={detail} onSaved={load} canRename={can("settings.rename")} canStartup={can("startup.update")} />}

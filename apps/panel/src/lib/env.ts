@@ -66,6 +66,11 @@ export const env = {
   // CurseForge (optional) — enables the CurseForge content source.
   curseforgeKey: optional("CURSEFORGE_API_KEY"),
 
+  // DuckDNS (optional) — stable "<domain>.duckdns.org" that follows the home IP.
+  // DUCKDNS_DOMAIN is the label only (e.g. "aether"), not the full hostname.
+  duckDnsDomain: optional("DUCKDNS_DOMAIN"),
+  duckDnsToken: optional("DUCKDNS_TOKEN"),
+
   // Monitoring — Discord webhook URL alerts are posted to (optional).
   alertWebhook: optional("ALERT_WEBHOOK"),
 };

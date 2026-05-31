@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ShieldCheck, KeyRound, Loader2, Plus, Trash2, Copy, Check, AlertTriangle } from "lucide-react";
 import { api } from "@/lib/client";
 import { relativeTime } from "@/lib/util";
+import { WebhooksPanel } from "@/components/dashboard/webhooks-panel";
 
 interface Me {
   id: string;
@@ -50,6 +51,7 @@ export default function AccountPage() {
 
       <TwoFactor me={me} onChange={loadMe} />
       <ApiKeys keys={keys} reload={loadKeys} isAdmin={me.role === "ADMIN"} />
+      <WebhooksPanel />
     </div>
   );
 }

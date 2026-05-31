@@ -59,6 +59,7 @@ model User {
   deviceAuths  DeviceAuth[]
   wakeLinks    WakeLink[]
   transactions Transaction[]
+  webhooks     Webhook[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -154,6 +155,22 @@ model Allocation {
   @@index([serverId])
 }
 
+model Webhook {
+  id        String   @id @default(cuid())
+  serverId  String?
+  server    Server?  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  url       String
+  events    Json     @default("[]")
+  secret    String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([ownerId])
+  @@index([serverId])
+}
+
 // ─────────────────────────── Servers ───────────────────────────
 
 model Server {
@@ -203,6 +220,7 @@ model Server {
   auditLogs    AuditLog[]
   transactions Transaction[]
   alerts       Alert[]
+  webhooks     Webhook[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

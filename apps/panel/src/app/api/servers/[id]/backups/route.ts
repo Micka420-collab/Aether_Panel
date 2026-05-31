@@ -6,6 +6,7 @@ import { getServerContext, assertScope } from "@/lib/access";
 import { DaemonClient } from "@/lib/daemon";
 import { enforceBackupRetention } from "@/lib/backups";
 import { audit } from "@/lib/audit";
+import { emitWebhook } from "@/lib/webhooks";
 
 export const GET = route(async (_req, ctx: { params: { id: string } }) => {
   const user = await requireUser();
@@ -49,6 +50,7 @@ export const POST = route(async (req, ctx: { params: { id: string } }) => {
       data: { completed: true, sizeBytes: BigInt(meta.sizeBytes), checksum: meta.checksum },
     });
     await audit("backup.create", { userId: user.id, serverId: c.server.id, metadata: { backupId: row.id } });
+    await emitWebhook("backup.created", { serverId: c.server.id, backupId: row.id, name: row.name }, { serverId: c.server.id, ownerId: c.server.ownerId });
     return json({ id: row.id, name: row.name, sizeBytes: meta.sizeBytes, completed: true }, 201);
   } catch (e: any) {
     await db.backup.delete({ where: { id: row.id } }).catch(() => {});

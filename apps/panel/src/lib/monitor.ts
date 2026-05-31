@@ -3,6 +3,7 @@ import { db } from "./db";
 import { DaemonClient } from "./daemon";
 import { env } from "./env";
 import { sendDiscordWebhook } from "./notify";
+import { emitWebhook } from "./webhooks";
 
 type Level = "info" | "warning" | "critical";
 
@@ -73,11 +74,13 @@ export async function monitorTick(): Promise<void> {
     if (state === "errored") {
       await raise(`server.errored:${s.id}`, "warning", `Server "${s.name}" crashed`, { serverId: s.id });
       await db.server.update({ where: { id: s.id }, data: { state: "errored" } });
+      await emitWebhook("server.errored", { serverId: s.id, name: s.name }, { serverId: s.id, ownerId: s.ownerId });
       if (s.autoRestart) {
         try {
           await new DaemonClient(s.node).power(s.id, "start");
           await db.server.update({ where: { id: s.id }, data: { state: "starting" } });
           await raise(`server.restarted:${s.id}`, "info", `Auto-restarted "${s.name}"`, { serverId: s.id });
+          await emitWebhook("server.restarted", { serverId: s.id, name: s.name }, { serverId: s.id, ownerId: s.ownerId });
         } catch {
           /* node trouble */
         }

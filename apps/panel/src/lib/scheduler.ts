@@ -5,6 +5,7 @@ import { DaemonClient } from "./daemon";
 import { enforceBackupRetention } from "./backups";
 import { meterBilling } from "./billing";
 import { monitorTick } from "./monitor";
+import { updateDuckDnsFromEnv, duckDnsConfigured } from "./ddns";
 
 /** Next fire time for a cron expression in a pinned timezone, or null if invalid. */
 export function nextRun(cron: string, timezone: string, from: Date = new Date()): Date | null {
@@ -90,6 +91,10 @@ export async function tick(): Promise<void> {
   await meterBilling().catch((e) => console.error("[scheduler] billing failed", e));
   // node health + crash detection / auto-restart
   await monitorTick().catch((e) => console.error("[scheduler] monitor failed", e));
+  // keep the DuckDNS stable address pointed at the current public IP
+  if (duckDnsConfigured()) {
+    await updateDuckDnsFromEnv().catch((e) => console.error("[scheduler] ddns failed", e));
+  }
 }
 
 let started = false;

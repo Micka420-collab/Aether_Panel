@@ -50,6 +50,9 @@ services:
       CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID:-}
       CURSEFORGE_API_KEY: ${CURSEFORGE_API_KEY:-}
       ALERT_WEBHOOK: ${ALERT_WEBHOOK:-}
+      # DuckDNS — stable "<domain>.duckdns.org" that follows the home IP (optional)
+      DUCKDNS_DOMAIN: ${DUCKDNS_DOMAIN:-}
+      DUCKDNS_TOKEN: ${DUCKDNS_TOKEN:-}
     # Not published to the host — Caddy reaches the panel over the internal
     # network. This keeps the panel off 0.0.0.0 and forces traffic through TLS.
     expose:
@@ -125,6 +128,22 @@ services:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+
+  # Discord control bot — OPT-IN (does not start by default; needs a bot token).
+  # Enable with:  docker compose --profile discord up -d discord-bot
+  discord-bot:
+    profiles: ["discord"]
+    build:
+      context: apps/discord-bot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - panel
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN:-}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+      AETHER_API_URL: http://panel:3000
+      AETHER_API_KEY: ${AETHER_API_KEY:-}
 
 volumes:
   pgdata:

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Server, Users, HardDrive, Plus, Loader2, CircleCheck, CircleX, BellRing } from "lucide-react";
 import { api } from "@/lib/client";
 import { cn, relativeTime } from "@/lib/util";
+import { DdnsCard } from "@/components/dashboard/ddns-card";
 
 interface AlertView {
   id: string;
@@ -76,6 +77,9 @@ export default function AdminPage() {
       </div>
 
       {error && <div className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">{error}</div>}
+
+      <DdnsCard />
+
 
       <div className="grid grid-cols-3 gap-4">
         {totals.map((t) => (

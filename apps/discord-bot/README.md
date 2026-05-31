@@ -1,46 +1,70 @@
 # Aether Discord control bot
 
-Control your Aether game servers from Discord with slash commands. It talks to
-the public `/api/v1` using an **API key** you create in your Aether account
-(Account → API keys). Single-tenant: the bot acts as that one account.
+Control your Aether game servers from Discord with **global** slash commands.
+It talks to the public `/api/v1` using an **API key** you create in your Aether
+account (Account → API keys). Single-tenant: the bot acts as that one account,
+and the API key's scopes decide what it is allowed to do.
 
 ## Commands
 
 | Command | Action |
 |---------|--------|
-| `/servers` | List your servers (name, game, state, id) |
-| `/status <server>` | State, address and player count |
+| `/servers` | List your servers (name, game, state, id, address) |
+| `/status <server>` | Live state, address and player count |
 | `/start <server>` | Start a server |
 | `/stop <server>` | Stop a server |
 | `/restart <server>` | Restart a server |
-| `/players <server>` | Online players |
-| `/console <server> <command>` | Run a console command |
+| `/say <server> <message>` | Broadcast a message in-game (console `say`) |
+| `/backup <server>` | Create a backup |
 
-`<server>` matches by name or id (partial allowed).
+`<server>` matches by exact id, exact name, or a partial id/name (case-insensitive).
+
+## Required API-key scopes
+
+| Command | Scope |
+|---------|-------|
+| `/servers`, `/status` | `allocation.read` (+ `players.read` for the player count) |
+| `/start` | `control.start` |
+| `/stop`, `/restart` | `control.stop` |
+| `/say` | `control.command` |
+| `/backup` | `backup.create` |
+
+## Configuration
+
+| Env var | Required | Description |
+|---------|----------|-------------|
+| `DISCORD_TOKEN` | yes | Discord bot token |
+| `DISCORD_CLIENT_ID` | yes | Discord application (client) id |
+| `AETHER_API_KEY` | yes | Aether API key (`aeth_…`) |
+| `AETHER_API_URL` | no | Aether panel base URL (default `http://localhost:3000`) |
 
 ## Setup
 
-1. Create a Discord application + bot at https://discord.com/developers, copy the
-   **bot token** and **application (client) id**. Invite it with the
-   `applications.commands` scope.
-2. In Aether, create an API key with at least `control.*` and `players.read`.
+1. Create a Discord application + bot at <https://discord.com/developers>, copy
+   the **bot token** and **application (client) id**. Invite it to your server
+   with the `applications.commands` scope.
+2. In Aether, create an API key with the scopes for the commands you want to use
+   (see the table above).
 3. Configure env and run:
 
 ```bash
 cd apps/discord-bot
 export DISCORD_TOKEN=...        # bot token
 export DISCORD_CLIENT_ID=...    # application id
-export DISCORD_GUILD_ID=...     # optional: a guild id for instant command registration
-export AETHER_URL=http://localhost:3000
-export AETHER_TOKEN=aeth_...    # your API key
+export AETHER_API_KEY=aeth_...  # your Aether API key
+export AETHER_API_URL=http://localhost:3000
 
 npm install
-npm run register   # registers the slash commands (once / after changes)
-npm run start      # runs the bot
+npm run build      # compile src -> dist
+npm start          # registers global commands on boot, then runs the bot
 ```
 
-Or build the Docker image: `docker build -f apps/discord-bot/Dockerfile -t aether/discord-bot .`
-(the container registers commands on boot, then starts).
+Or build the Docker image (build context is this directory):
 
-The required scopes are enforced by the API key, so the bot can only do what the
-key is allowed to do.
+```bash
+docker build -t aether/discord-bot apps/discord-bot
+```
+
+The bot **registers its global slash commands on every boot**, so updates roll
+out automatically. Global commands can take up to ~1 hour to first appear in a
+guild; after that they update near-instantly.
