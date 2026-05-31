@@ -5,6 +5,7 @@ import { Loader2, Rocket, Check, Upload, PackageOpen, Sparkles } from "lucide-re
 import { api } from "@/lib/client";
 import { cn } from "@/lib/util";
 import { DEFAULT_PLANS } from "@/lib/plans";
+import { ModpackPicker } from "@/components/dashboard/modpack-picker";
 
 interface TemplateView {
   id: string;
@@ -33,6 +34,7 @@ export default function NewServerPage() {
   const [mode, setMode] = useState<"new" | "import">("new");
   const [archive, setArchive] = useState<File | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
+  const [modpackSlug, setModpackSlug] = useState<string | null>(null);
 
   useEffect(() => {
     api<{ templates: TemplateView[] }>("/api/templates")
@@ -46,6 +48,7 @@ export default function NewServerPage() {
     const init: Record<string, string> = {};
     for (const v of t.variables) init[v.key] = v.default;
     setVars(init);
+    setModpackSlug(null); // a fresh game resets any chosen modpack
   }
 
   const grouped = useMemo(() => {
@@ -66,9 +69,11 @@ export default function NewServerPage() {
     setError(null);
     try {
       setProgress(mode === "import" ? "Creating the server…" : null);
+      // A chosen Modrinth modpack is merged in as MODRINTH_MODPACK; itzg installs it on first boot.
+      const variables = modpackSlug && mode === "new" ? { ...vars, MODRINTH_MODPACK: modpackSlug } : vars;
       const res = await api<{ id: string }>("/api/servers", {
         method: "POST",
-        json: { name, templateId: selected.id, planSlug, variables: vars },
+        json: { name, templateId: selected.id, planSlug, variables },
       });
 
       if (mode === "import" && archive) {
@@ -215,6 +220,15 @@ export default function NewServerPage() {
                   </div>
                 </div>
               ))}
+
+              {mode === "new" && selected.game === "minecraft" && (
+                <ModpackPicker
+                  onPick={(p) => setModpackSlug(p?.MODRINTH_MODPACK ?? null)}
+                  selectedSlug={modpackSlug}
+                  loader={(vars.TYPE ?? "").toLowerCase() || null}
+                  version={vars.VERSION ?? null}
+                />
+              )}
 
               {mode === "import" && (
                 <div className="rounded-2xl border border-cyan/25 bg-cyan/[0.05] p-4">

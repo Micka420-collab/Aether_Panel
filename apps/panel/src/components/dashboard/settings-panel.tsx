@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Loader2, Trash2 } from "lucide-react";
 import { api } from "@/lib/client";
+import { UpgradeCard } from "./upgrade-card";
 
 interface Var {
   key: string;
@@ -130,6 +131,8 @@ export function SettingsPanel({
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save changes
         </button>
       )}
+
+      {detail.isOwner && <UpgradeCard id={id} canUpgrade={canStartup} />}
 
       {detail.isOwner && (
         <div className="rounded-2xl border border-danger/30 bg-danger/5 p-5">

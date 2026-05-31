@@ -253,7 +253,8 @@ export function createHttpApp() {
     "/api/servers/:id/backups/:backupId/download",
     wrap(async (req, res) => {
       res.setHeader("Content-Disposition", `attachment; filename="${safeFilename(req.params.backupId + ".tar.gz")}"`);
-      backups.downloadBackup(req.params.id!, req.params.backupId!).on("error", () => res.destroy()).pipe(res);
+      const stream = await backups.downloadBackup(req.params.id!, req.params.backupId!);
+      stream.on("error", () => res.destroy()).pipe(res);
     }),
   );
 

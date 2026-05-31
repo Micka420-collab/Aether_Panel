@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link2, Copy, Check, Loader2, Globe, X, CheckCircle2, ArrowRightLeft } from "lucide-react";
 import { api } from "@/lib/client";
 import { cn } from "@/lib/util";
+import { CrossplayCard } from "./crossplay-card";
 
 interface Alloc {
   id: string;
@@ -125,6 +126,7 @@ export function NetworkPanel({ detail, isOwner, id, onChanged }: { detail: any; 
       </div>
 
       <DomainCard id={id} isOwner={isOwner} />
+      {detail?.server?.game === "minecraft" && <CrossplayCard id={id} canStartup={isOwner} />}
       <SftpCard host={detail?.node?.publicIp ?? "your-node"} serverId={id} />
 
       {isOwner && (

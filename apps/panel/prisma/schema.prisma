@@ -171,6 +171,18 @@ model Webhook {
   @@index([serverId])
 }
 
+model ServerStat {
+  id       String   @id @default(cuid())
+  serverId String
+  server   Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  ts       DateTime @default(now())
+  cpu      Float
+  memMb    Int
+  players  Int
+
+  @@index([serverId, ts])
+}
+
 // ─────────────────────────── Servers ───────────────────────────
 
 model Server {
@@ -221,6 +233,7 @@ model Server {
   transactions Transaction[]
   alerts       Alert[]
   webhooks     Webhook[]
+  stats        ServerStat[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -4,6 +4,7 @@ import { Wallet, Loader2, Plus, TrendingDown, Coins, ArrowUpRight, ArrowDownRigh
 import { api } from "@/lib/client";
 import { relativeTime } from "@/lib/util";
 import { DEFAULT_PLANS } from "@/lib/plans";
+import { TopupCard } from "@/components/dashboard/topup-card";
 
 interface Billing {
   balance: number;
@@ -70,15 +71,18 @@ export default function BillingPage() {
         </div>
       </div>
 
-      <div className="glass p-5">
-        <h2 className="font-display font-semibold text-white">Top up</h2>
-        <p className="mt-1 text-sm text-white/45">Demo top-up — wire a payment provider (Stripe) in production.</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {[500, 1000, 5000].map((a) => (
-            <button key={a} onClick={() => topup(a)} disabled={busy} className="btn-ghost">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} {a.toLocaleString()} credits
-            </button>
-          ))}
+      <div className="grid gap-4 md:grid-cols-2">
+        <TopupCard />
+        <div className="glass p-5">
+          <h2 className="font-display font-semibold text-white">Quick grant</h2>
+          <p className="mt-1 text-sm text-white/45">Instant credits without a card (demo / promo).</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {[500, 1000, 5000].map((a) => (
+              <button key={a} onClick={() => topup(a)} disabled={busy} className="btn-ghost">
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} {a.toLocaleString()} credits
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import tar from "tar-fs";
 import zlib from "node:zlib";
 import fs from "node:fs/promises";
 import { createWriteStream, createReadStream } from "node:fs";
+import type { Readable } from "node:stream";
 import crypto from "node:crypto";
 import path from "node:path";
 import type { BackupMeta, ServerBuildSpec } from "@aether/shared";
@@ -9,6 +10,14 @@ import { config } from "./config.js";
 import { hostVolumePath, rconHost } from "./docker.js";
 import { sendRcon } from "./rcon.js";
 import { logger } from "./logger.js";
+import {
+  s3Enabled,
+  uploadToS3,
+  downloadFromS3,
+  streamFromS3,
+  deleteFromS3,
+  backupKey,
+} from "./s3.js";
 
 function backupDir(serverId: string): string {
   return path.join(config.backupDir, serverId);
@@ -65,6 +74,9 @@ export async function createBackup(
       gz.pipe(out);
     });
     const st = await fs.stat(dest);
+    // Best-effort off-site copy. Never throws: a failed/disabled S3 just keeps
+    // the backup local. storage reflects where an off-site copy lives.
+    const offsite = await uploadToS3(dest, backupKey(serverId, backupId));
     return {
       id: backupId,
       name,
@@ -73,17 +85,28 @@ export async function createBackup(
       createdAt: Date.now(),
       completed: true,
       locked: false,
-      storage: "local",
+      storage: offsite ? "s3" : "local",
     };
   } finally {
     await unflush(serverId, opts.spec);
   }
 }
 
-export async function restoreBackup(serverId: string, backupId: string): Promise<void> {
+/** Ensure a backup's local .tar.gz exists, lazily re-hydrating from S3 if missing. */
+async function ensureLocal(serverId: string, backupId: string): Promise<string | null> {
   const file = backupFile(serverId, backupId);
+  if (await fs.access(file).then(() => true).catch(() => false)) return file;
+  if (s3Enabled() && (await downloadFromS3(backupKey(serverId, backupId), file).catch(() => false))) {
+    return file;
+  }
+  return null;
+}
+
+export async function restoreBackup(serverId: string, backupId: string): Promise<void> {
+  // Re-hydrate from S3 if the local archive is gone (e.g. node was replaced).
+  const file = await ensureLocal(serverId, backupId);
+  if (!file) throw new Error("backup archive not found (local or S3)");
   const dest = hostVolumePath(serverId);
-  await fs.access(file);
 
   // Crash-safe restore: extract into a TEMP sibling dir first, and only swap it
   // in once the stream has finished without error. A truncated/corrupt archive or
@@ -125,8 +148,23 @@ export async function restoreBackup(serverId: string, backupId: string): Promise
 
 export async function deleteBackup(serverId: string, backupId: string): Promise<void> {
   await fs.rm(backupFile(serverId, backupId), { force: true });
+  // Also drop the off-site copy if one exists (best-effort).
+  if (s3Enabled()) await deleteFromS3(backupKey(serverId, backupId)).catch(() => {});
 }
 
-export function downloadBackup(serverId: string, backupId: string) {
-  return createReadStream(backupFile(serverId, backupId));
+/**
+ * Stream a backup's bytes. Prefers the local .tar.gz; if it's missing but an
+ * off-site copy exists, streams straight from S3 without re-hydrating to disk.
+ */
+export async function downloadBackup(serverId: string, backupId: string): Promise<Readable> {
+  const file = backupFile(serverId, backupId);
+  if (await fs.access(file).then(() => true).catch(() => false)) {
+    return createReadStream(file);
+  }
+  if (s3Enabled()) {
+    const stream = await streamFromS3(backupKey(serverId, backupId));
+    if (stream) return stream;
+  }
+  // Fall back to the local read stream so the caller gets a clean ENOENT.
+  return createReadStream(file);
 }

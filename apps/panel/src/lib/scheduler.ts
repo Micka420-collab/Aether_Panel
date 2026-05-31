@@ -6,6 +6,7 @@ import { enforceBackupRetention } from "./backups";
 import { meterBilling } from "./billing";
 import { monitorTick } from "./monitor";
 import { updateDuckDnsFromEnv, duckDnsConfigured } from "./ddns";
+import { recordStats } from "./metrics";
 
 /** Next fire time for a cron expression in a pinned timezone, or null if invalid. */
 export function nextRun(cron: string, timezone: string, from: Date = new Date()): Date | null {
@@ -95,6 +96,8 @@ export async function tick(): Promise<void> {
   if (duckDnsConfigured()) {
     await updateDuckDnsFromEnv().catch((e) => console.error("[scheduler] ddns failed", e));
   }
+  // sample running-server resource usage into history
+  await recordStats().catch((e) => console.error("[scheduler] metrics failed", e));
 }
 
 let started = false;
